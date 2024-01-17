@@ -1,12 +1,13 @@
 import { DiskSpacePrimitives } from "../common/spaces/disk_space_primitives.ts";
 import { AssetBundle } from "../plugos/asset_bundle/bundle.ts";
 
-import { Application } from "../server/deps.ts";
 import { sleep } from "$sb/lib/async.ts";
 import { ServerSystem } from "../server/server_system.ts";
 import { AssetBundlePlugSpacePrimitives } from "../common/spaces/asset_bundle_space_primitives.ts";
 import { determineDatabaseBackend } from "../server/db_backend.ts";
 import { EndpointHook } from "../plugos/hooks/endpoint.ts";
+import { determineShellBackend } from "../server/shell_backend.ts";
+import { Hono } from "../server/deps.ts";
 
 export async function runPlug(
   spacePath: string,
@@ -17,9 +18,9 @@ export async function runPlug(
   httpHostname = "127.0.0.1",
 ) {
   const serverController = new AbortController();
-  const app = new Application();
+  const app = new Hono();
 
-  const dbBackend = await determineDatabaseBackend();
+  const dbBackend = await determineDatabaseBackend(spacePath);
 
   if (!dbBackend) {
     console.error("Cannot run plugs in databaseless mode.");
@@ -34,17 +35,17 @@ export async function runPlug(
       builtinAssetBundle,
     ),
     dbBackend,
+    determineShellBackend(spacePath),
   );
   await serverSystem.init(true);
   app.use((context, next) => {
     return endpointHook.handleRequest(serverSystem.system!, context, next);
   });
-
-  app.listen({
+  Deno.serve({
     hostname: httpHostname,
     port: httpServerPort,
     signal: serverController.signal,
-  });
+  }, app.fetch);
 
   if (functionName) {
     const [plugName, funcName] = functionName.split(".");

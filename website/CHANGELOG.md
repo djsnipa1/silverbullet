@@ -2,14 +2,54 @@ An attempt at documenting the changes/new features introduced in each
 release.
 
 ---
-
 ## Next
-* Removed built-in multi-user [[Authentication]], `SB_AUTH` is no longer supported, use `--user` or `SB_USER` instead, or an authentication layer such as [[Authelia]].
-* Work on supporting multiple database as well as storage back-ends, reviving [[Install/Deno Deploy]] support.
-* This is now documented on the brand new [[Install/Configuration]] page.
-* A new `silverbullet sync` command to [[Sync]] spaces.
-* Technical refactoring in preparation of multi-tenant deployment support (allowing you to run a single SB instance and serve multiple spaces and users at the same time)
-  * Lazy everything: plugs are now lazily loaded (after a first load,  manifests are cached). On the server side, a whole lot of infrastructure is now only booted once the first HTTP request comes in
+_Not yet released, this will likely become 0.6.0._
+
+* **Directives have now been removed** from the code base. Please use [[Live Queries]] and [[Live Templates]] instead. If you hadn’t migrated yet and want to auto migrate, downgrade your SilverBullet version to 0.5.11 (e.g. using the `zefhemel/silverbullet:0.5.11` docker image) and run the {[Directive: Convert Entire Space to Live/Templates]} command with that version.
+* (Hopefully subtle) **breaking change** in how tags work (see [[Objects]]):
+  * Every object now has a `tag` attribute, signifying the “main” tag for that object (e.g. `page`, `item`)
+  * The `tags` attribute will now _only_ contain explicitly assigned tags (so not the built-in tag, which moved to `tag`)
+  * The new `itags` attribute (available in many objects) includes both the `tag`, `tags` as well as any tags inherited from the page the object appears in.
+  * Page tags now no longer need to appear at the top of the page, but can appear anywhere as long as they are the only thing appearing in a paragraph with no additional text, see [[Objects$page]].
+* New [[Markdown/Code Widgets|Code Widget]]: `toc` to manually include a [[Table of Contents]]
+* New template type: [[Live Template Widgets]] allowing you to automatically add templates to the top or bottom of your pages (based on some criteria). Using this feature it possible to implement [[Table of Contents]] and [[Linked Mentions]] without having “hard coded” into SilverBullet itself.
+* **“Breaking” change:** Two features are now no longer hardcoded into SilverBullet, but can be activated quite easily using [[Live Template Widgets]] (see their respective documentation pages on instructions on how to do this):
+  * [[Table of Contents]]
+  * [[Linked Mentions]]
+* Filter list (used by [[Page Picker]] and [[Command Palette]]) improvements:
+  * Better ranking
+  * Better positioning of modal (especially on mobile)
+  * Better mouse behavior
+* Templates:
+  * Somewhat nicer rendering of {{templateVars}} (notice the gray background)
+  * Rendering of [[Markdown/Code Widgets]] (such as live queries and templates) **are now disabled** on template pages, which should make them less confusing to read and interpret.
+* Backend work in preparation for supporting more “serverless” deployments (e.g. Cloudflare workers and Deno Deploy) in the future
+  * Move from [Oak](https://oakserver.github.io/oak/) to [Hono](https://hono.dev/)
+  * Support for in-process plug loading (without workers)
+
+---
+
+## 0.5.11
+* Keyboard shortcuts as well as priority (order in which they appear in the [[Command Palette]]) can now be configured for [[Commands]] in [[SETTINGS]]. The `priority` enables you to put frequently used commands at the top.
+* The rendering of [[Live Templates]], [[Live Queries]], [[Table of Contents]] and [[Linked Mentions]] has been re-implemented. Rendering should now be near-instant and the “flappy” behavior should be largely gone, especially after an initial load (results are cached). There may still be some visual regressions. Please report them if you find them.
+
+---
+
+## 0.5.10
+* **Breaking change**: Local attachment URLs (`[page](url)` syntax and `![alt](url)` image syntax) are now interpreted relative to the page's folder unless their URL starts with a `/`, then they're relative to the space root (as per [this issue](https://github.com/silverbulletmd/silverbullet/issues/363))
+* **Breaking change:** Revamped [[Templates]], specifically changed the format of [[Page Templates]]. The “Template: Instantiate Page” has been renamed to {[Page: From Template]}.
+* It is now even more recommended to tag your [[Templates]] with the “template” tag because completion in [[Live Queries]] and [[Live Templates]] will now only suggest `#template` tagged pages.
+* New [[Frontmatter]] attributes with special meaning: `displayName` and `aliases` (allowing to specify alternative names for pages)
+* The [[Page Picker]] now also shows (and matches against) tags, aliases and display names for pages.
+* It is now possible to filter pages based on tags in the [[Page Picker]] by typing a hashtag in the filter phrase, e.g. `#template` to filter pages that have a `template` tag.
+* Added new commands to manage [[Outlines]]. Note this resulted in changing names and keyboard shortcuts for managing folds as well, to be more consistent with the other outline commands.
+* Removed built-in multi-user [[Authentication]], `SB_AUTH` is no longer supported; use `--user` or `SB_USER` instead or an authentication layer such as [[Authelia]].
+* Background and more experimental work:
+  * Work on supporting multiple database and storage backends, reviving [[Install/Deno Deploy]] support.
+  * This is now documented on the brand-new [[Install/Configuration]] page.
+  * A new `silverbullet sync` command to [[Sync]] spaces (early days, use with caution)
+  * Technical refactoring in preparation for multi-tenant deployment support (allowing you to run a single SB instance and serve multiple spaces and users at the same time)
+    * Lazy everything: plugs are now lazily loaded (after a first load,  manifests are cached). On the server side, a whole lot of infrastructure is now only booted once the first HTTP request comes in
 
 ---
 
@@ -23,10 +63,10 @@ release.
 * General support for highlighting errors (underlined) in the editor. Currently implemented for:
   * All YAML fenced code blocks (and [[Frontmatter]]): will now highlight YAML parse errors
   * [[Live Queries]]: will highlight non-existing query sources and non-existing template references in `render` clauses
-* Basic [[Table of Contents]] support: any page _with 3 headers or more_, now has a “Table of Contents” widget appear (see this very page). You can toggle this feature using the {[Table of Contents: Toggle]} command.
+* Basic [[Table of Contents]] support: any page _with 3 headers or more_ now has a “Table of Contents” widget appear (see this very page). You can toggle this feature using the {[Table of Contents: Toggle]} command.
 * Tapping/clicking the top bar (outside of the page name and action buttons) now scrolls your page to the very top.
-* Slightly more gracious error reporting on load, when using the Online [[Client Modes]] and the server is offline.
-* Any page tagged with `#template` is no longer indexed (beside as a `template`)
+* Slightly more gracious error reporting on load when using the Online [[Client Modes]] and the server is offline.
+* Any page tagged with `#template` is no longer indexed (besides as a `template`)
 * Upgraded set of emoji (completed via the :thinking_face: syntax) to 15.1 (so more emoji)
 * Various bug fixes
 
@@ -35,7 +75,7 @@ release.
 * Various optimization and bug fixes
 * Experimental idea: [[Template Sets]]
 * The `Alt-Shift-n` key was previously bound to both {[Page: New]} and {[Quick Note]}. That won’t work, so now it’s just bound to {[Quick Note]}
-* The `Alt-q` command is now bound to the new {[Live Queries and Templates: Refresh All]} command refreshing all [[Live Queries]] and [[Live Templates]] on the page. This is to get y’all prepared to move away from directives.
+* The `Alt-q` command is now bound to the new {[Live Queries and Templates: Refresh All]} command, refreshing all [[Live Queries]] and [[Live Templates]] on the page. This is to get y’all prepared to move away from directives.
 * It’s likely that version 0.6.0 **will remove directives**, so please switch over to live queries and templates, e.g. using...
   * The new {[Directive: Convert Entire Space to Live/Templates]} command, which will (attempt) to convert all uses of directives in your space automatically (backup your space before, though, just in case)
 
@@ -66,7 +106,7 @@ release.
 * The {[Directive: Convert to Live Query/Template]} now also converts `#use` and `#include` directives
 * Styling improvements for Linked Mentions
 * SilverBullet now fully works when added as PWA on Safari 17 (via the “Add to Dock” option).
-* Fix support for handlebars variables in [[Live Queries]] and [[live]]
+* Fix support for handlebars variables in [[Live Queries]] and [[Live Templates]]
 * Plug robustness improvements (SB shouldn’t fully break when loading plugs that rely on disabled syscalls)
 * Various other bug fixes
 
@@ -84,11 +124,11 @@ release.
 ## 0.5.0
 Oh boy, this is a big one. This release brings you the following:
 
-* [[Objects]]: a more generic system to indexing and querying content in your space, including the ability to define your own custom object “types” (dubbed [[Tags]]). See the referenced pages for examples.
+* [[Objects]]: a more generic system for indexing and querying content in your space, including the ability to define your own custom object “types” (dubbed [[Tags]]). See the referenced pages for examples.
 * [[Live Queries]] and [[Live Templates]]: ultimately will replace [[🔌 Directive]] in future versions and **[[🔌 Directive]] is now deprecated.** They differ from directives in that they don’t materialize their output into the page itself, but rather render them on the fly so only the query/template instantiation is kept on disk. All previous directive examples on this website how now been replaced with [[Live Templates]] and [[Live Queries]]. To ease the conversion there is {[Directive: Convert Query to Live Query]} command: just put your cursor inside of an existing (query) directive and run it to auto-convert.
 * The query syntax used in [[Live Queries]] (but also used in [[🔌 Directive]]) has been significantly expanded, although there may still be bugs. There’s still more value to be unlocked here in future releases.
 * The previous “backlinks” plug is now built into SilverBullet as [[Linked Mentions]] and appears at the bottom of every page (if there are incoming links). You can toggle linked mentions via {[Mentions: Toggle]}.
-* A whole bunch of [[PlugOS]] syscalls have been updated, I’ll do my best update known existing plugs, but if you built existing ones some things may have broken. Please report anything broken in [Github issues](https://github.com/silverbulletmd/silverbullet/issues).
+* A whole bunch of [[PlugOS]] syscalls have been updated. I’ll do my best update known existing plugs, but if you built existing ones some things may have broken. Please report anything broken in [Github issues](https://github.com/silverbulletmd/silverbullet/issues).
 * This release effectively already removes the `#eval` [[🔌 Directive]] (it’s still there, but likely not working), this directive needs some rethinking. Join us on [Discord](https://discord.gg/EvXbFucTxn) if you have a use case for it and how you use/want to use it.
 
 **Important**:
@@ -102,11 +142,11 @@ Due to significant changes in how data is stored, likely your space will be resy
 The big change in this release is that SilverBullet now supports two [[Client Modes|client modes]]: _online_ mode and _sync_ mode. Read more about them here: [[Client Modes]].
 
 Other notable changes:
-* Massive reshuffling of built-in [[🔌 Plugs]], splitting the old “core” plug into [[🔌 Editor]], [[🔌 Template]] and [[🔌 Index]].
+* Massive reshuffling of built-in [[🔌 Plugs]], splitting the old “core” plug into [[Plugs/Editor]], [[Plugs/Template]] and [[Plugs/Index]].
 * Directives in [[Live Preview]] now always take up a single line height.
-* [[🔌 Tasks]] now support custom states (not just `[x]` and `[ ]`), for example:
+* [[Plugs/Tasks]] now support custom states (not just `[x]` and `[ ]`), for example:
   * [IN PROGRESS] An in progress task
   * [BLOCKED] A task that’s blocked
-  [[🔌 Tasks|Read more]]
+  [[Plugs/Tasks|Read more]]
 * Removed [[Cloud Links]] support in favor of [[Federation]]. If you still have legacy cloud links, simply replace the 🌩️ with a `!` and things should work as before.
 

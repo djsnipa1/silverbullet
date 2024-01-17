@@ -1,4 +1,3 @@
-import { Application } from "../server/deps.ts";
 import { HttpServer } from "../server/http_server.ts";
 import clientAssetBundle from "../dist/client_asset_bundle.json" assert {
   type: "json",
@@ -22,6 +21,7 @@ export async function serveCommand(
     key?: string;
     reindex?: boolean;
     syncOnly?: boolean;
+    clientEncryption?: boolean;
   },
   folder?: string,
 ) {
@@ -29,8 +29,21 @@ export async function serveCommand(
     "127.0.0.1";
   const port = options.port ||
     (Deno.env.get("SB_PORT") && +Deno.env.get("SB_PORT")!) || 3000;
+
+  const clientEncryption = options.clientEncryption ||
+    !!Deno.env.get("SB_CLIENT_ENCRYPTION");
+
+  if (clientEncryption) {
+    console.log(
+      "Running in client encryption mode, this will implicitly enable sync-only mode",
+    );
+  }
+
   const syncOnly = options.syncOnly || !!Deno.env.get("SB_SYNC_ONLY");
-  const app = new Application();
+
+  if (syncOnly) {
+    console.log("Running in sync-only mode (no backend processing)");
+  }
 
   if (!folder) {
     // Didn't get a folder as an argument, check if we got it as an environment variable
@@ -51,8 +64,7 @@ export async function serveCommand(
   );
   if (hostname === "127.0.0.1") {
     console.info(
-      `SilverBullet will only be available locally (via http://localhost:${port}).
-To allow outside connections, pass -L 0.0.0.0 as a flag, and put a TLS terminator on top.`,
+      `SilverBullet will only be available locally, to allow outside connections, pass -L0.0.0.0 as a flag, and put a TLS terminator on top.`,
     );
   }
 
@@ -69,17 +81,17 @@ To allow outside connections, pass -L 0.0.0.0 as a flag, and put a TLS terminato
     namespace: "*",
     auth: userCredentials,
     authToken: Deno.env.get("SB_AUTH_TOKEN"),
+    syncOnly,
+    clientEncryption,
     pagesPath: folder,
   });
 
   const httpServer = new HttpServer({
-    app,
     hostname,
     port,
     clientAssetBundle: new AssetBundle(clientAssetBundle as AssetJson),
     plugAssetBundle: new AssetBundle(plugAssetBundle as AssetJson),
     baseKvPrimitives,
-    syncOnly,
     keyFile: options.key,
     certFile: options.cert,
     configs,

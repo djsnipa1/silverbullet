@@ -1,3 +1,5 @@
+This page lists some potentially useful keyboard shortcuts. Also have a look at [[Outlines]] for outline specific keyboard shortcuts.
+
 # Highlights
 Particularly useful keyboard shortcuts (that you may not know about).
 | Combination (Mac/Win-Linux) | Action |
@@ -10,15 +12,12 @@ Particularly useful keyboard shortcuts (that you may not know about).
 | Ctrl-Alt-t | Toggle table of contents|
 | Ctrl-Alt-m | Toggle mentions | 
 | Cmd-Shift-f/Ctrl-Shift-f | Search for text across your entire space |
-| Cmd-Alt-[/Ctrl-Shift-[ | Fold the content at the cursor position |
-| Cmd-Alt-]/Ctrl-Shift-] | Unfold the content at the cursor position
-
 # System
 | Combination (Mac/Win-Linux) | Action |
 |----------|----------|
 | Cmd-/ / Ctrl-/ | Run command |
 | Cmd-k/Ctrl-k | Open page |
-| Cmd-Shift-p/Ctrl-Shift-p | Update plugs (from the [[PLUGS]] file) |
+| Cmd-Shift-p/Ctrl-Shift-p | Update plugs (from the `PLUGS` file) |
 | Alt-q | Refresh all live queries and templates on this page |
 | Cmd-p/Ctrl-p | Toggle markdown preview |
 | Ctrl-Alt-t | Toggle table of contents|
@@ -47,10 +46,6 @@ Particularly useful keyboard shortcuts (that you may not know about).
 | Alt-t | Toggle the state of the task at the cursor position |
 | Cmd-z/Ctrl-z | Undo the latest change |
 | Cmd-u/Ctrl-u | Go one change ahead |
-| Cmd-Alt-[/Ctrl-Shift-[ | Fold the content at the cursor position |
-| Cmd-Alt-]/Ctrl-Shift-] | Unfold the content at the cursor position
-| Ctrl-Alt-[ | Fold the entire page by headers |
-| Ctrl-Alt-] | Unfold the entire page by headers |
 
 # Text
 | Combination (Mac/Win-Linux) | Text formatting |
