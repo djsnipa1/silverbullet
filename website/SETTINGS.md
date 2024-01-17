@@ -1,4 +1,4 @@
-This page contains settings for configuring SilverBullet and its Plugs. Changing any of these in most cases will go into effect immediately, except for `indexPage` which requires a reload.
+This page contains settings for configuring SilverBullet and its Plugs. Changing any of these will go into effect immediately in most cases except `indexPage` and `customStyles`, which require a reload.
 
 ```yaml
 # Initial page to load when launching SB
@@ -7,33 +7,28 @@ indexPage: "[[SilverBullet]]"
 # Load custom CSS styles from the following page, can also be an array
 customStyles: "[[STYLES]]"
 
-# Template related settings
-pageTemplatePrefix: "template/page/"
-snippetPrefix: "snippet/"
-
+# Template settings
 quickNotePrefix: "📥 "
-
 dailyNotePrefix: "📅 "
 dailyNoteTemplate: "[[template/page/Daily Note]]"
-
 weeklyNotePrefix: "🗓️ "
 weeklyNoteTemplate: "[[template/page/Weekly Note]]"
 weeklyNoteMonday: false
 
-# Markdown
-previewOnRHS: true
+# It is possible to override keyboard shortcuts and command priority
+shortcuts:
+- command: "{[Stats: Show]}" # Using the command link syntax here
+  mac: "Cmd-s" # Mac-specific keyboard shortcut
+  key: "Ctrl-s" # Windows/Linux specific keyboard shortcut
+- command: "Navigate: Center Cursor" # But a command name is also supported 
+  key: "Alt-x"
+- command: "{[Upload: File]}"
+  priority: 1 # Make sure this appears at the top of the list in the command palette
 
 # Defines files to ignore in a format compatible with .gitignore
 spaceIgnore: |
    dist
    largefolder
    *.mp4
-# Plug overrides allow you to override any property in a plug manifest at runtime
-# The primary use case of this is to override or define keyboard shortcuts. You can use the . notation, to quickly "dive deep" into the structure
-plugOverrides:
-  editor:
-    # Matching this YAML structure:
-    # https://github.com/silverbulletmd/silverbullet/blob/main/plugs/editor/editor.plug.yaml
-    # and overriding the "key" for centering the cursor
-    functions.centerCursor.command.key: Ctrl-Alt-p
+
 ```

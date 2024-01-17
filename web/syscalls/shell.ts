@@ -10,15 +10,14 @@ export function shellSyscalls(
       cmd: string,
       args: string[],
     ): Promise<{ stdout: string; stderr: string; code: number }> => {
-      if (!client.remoteSpacePrimitives) {
+      if (!client.httpSpacePrimitives) {
         throw new Error("Not supported in fully local mode");
       }
-      const resp = client.remoteSpacePrimitives.authenticatedFetch(
-        `${client.remoteSpacePrimitives.url}/.rpc`,
+      const resp = client.httpSpacePrimitives.authenticatedFetch(
+        `${client.httpSpacePrimitives.url}/.rpc/shell`,
         {
           method: "POST",
           body: JSON.stringify({
-            operation: "shell",
             cmd,
             args,
           }),
