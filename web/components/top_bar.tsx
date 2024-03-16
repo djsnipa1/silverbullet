@@ -1,12 +1,7 @@
-import {
-  CompletionContext,
-  CompletionResult,
-  useEffect,
-  useRef,
-} from "../deps.ts";
-import type { ComponentChildren, FunctionalComponent } from "../deps.ts";
-import { Notification } from "../types.ts";
-import { FeatherProps } from "https://esm.sh/v99/preact-feather@4.2.1/dist/types";
+import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import type { ComponentChildren, FunctionalComponent } from "preact";
+import { Notification } from "$lib/web.ts";
+import { FeatherProps } from "preact-feather/types";
 import { MiniEditor } from "./mini_editor.tsx";
 
 export type ActionButton = {
@@ -15,6 +10,7 @@ export type ActionButton = {
   class?: string;
   callback: () => void;
   href?: string;
+  mobile?: boolean;
 };
 
 export function TopBar({
@@ -22,6 +18,7 @@ export function TopBar({
   unsavedChanges,
   syncFailures,
   isLoading,
+  isMobile,
   notifications,
   onRename,
   actionButtons,
@@ -37,6 +34,7 @@ export function TopBar({
   unsavedChanges: boolean;
   syncFailures: number;
   isLoading: boolean;
+  isMobile: boolean;
   notifications: Notification[];
   darkMode: boolean;
   vimMode: boolean;
@@ -48,36 +46,6 @@ export function TopBar({
   lhs?: ComponentChildren;
   rhs?: ComponentChildren;
 }) {
-  // Another one of my less proud moments:
-  // Somehow I cannot seem to proerply limit the width of the page name, so I'm doing
-  // it this way. If you have a better way to do this, please let me know!
-  useEffect(() => {
-    function resizeHandler() {
-      const editorWidth = parseInt(
-        getComputedStyle(document.getElementById("sb-root")!).getPropertyValue(
-          "--editor-width",
-        ),
-      );
-      const currentPageElement = document.getElementById("sb-current-page");
-      if (currentPageElement) {
-        // Temporarily make it very narrow to give the parent space
-        currentPageElement.style.width = "10px";
-        const innerDiv = currentPageElement.parentElement!.parentElement!;
-
-        // Then calculate a new width
-        currentPageElement.style.width = `${
-          Math.min(editorWidth - 170, innerDiv.clientWidth - 170)
-        }px`;
-      }
-    }
-    globalThis.addEventListener("resize", resizeHandler);
-
-    // Stop listening on unmount
-    return () => {
-      globalThis.removeEventListener("resize", resizeHandler);
-    };
-  }, []);
-
   return (
     <div
       id="sb-top"

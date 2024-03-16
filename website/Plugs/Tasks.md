@@ -18,6 +18,8 @@ However, custom states can also be used for extra flexibility:
 
 You can cycle through the states by clicking on the status or by running the {[Task: Cycle State]} command while on a task. There is also auto complete for all known custom task states in a space.
 
+To delete completed task from a page you can use {[Task: Remove Completed]}.
+
 ## Annotations
 Tasks can also be annotated with [[Tags]]:
 
@@ -39,7 +41,7 @@ When the cursor is positioned inside of a due date, the {[Task: Postpone]} comma
 All meta data (`done` status, `state`, `tags`, `deadline` and custom attributes) is extracted and available via the `task` query source to [[Live Queries]]:
 
 ```query
-task where page = "{{@page.name}}" 
+task where page = @page.name
 ```
 
 ## Rendering
@@ -48,7 +50,7 @@ There is a [[!silverbullet.md/template/tasks/task]] template you can use to rend
 Try it (by clicking on the checkbox inside of the query):
 
 ```query
-task where page = "{{@page.name}}" and name = "Remote toggle me" render [[template/task]] 
+task where page = @page.name and name = "Remote toggle me" render [[Library/Core/Query/Task]] 
 ```
 
 * [ ] Remote toggle me

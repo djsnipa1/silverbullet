@@ -1,16 +1,11 @@
-import {
-  CompletionContext,
-  CompletionResult,
-  useEffect,
-  useRef,
-  useState,
-} from "../deps.ts";
-import { FilterOption } from "../types.ts";
-import { FunctionalComponent } from "https://esm.sh/v99/preact@10.11.3/src/index";
-import { FeatherProps } from "https://esm.sh/v99/preact-feather@4.2.1/dist/types";
+import { FeatherProps } from "preact-feather/types";
+import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import { FunctionalComponent } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { FilterOption } from "$lib/web.ts";
 import { MiniEditor } from "./mini_editor.tsx";
-import { fuzzySearchAndSort } from "./fuse_search.ts";
-import { deepEqual } from "$sb/lib/json.ts";
+import { fuzzySearchAndSort } from "../fuse_search.ts";
+import { deepEqual } from "../../plug-api/lib/json.ts";
 
 export function FilterList({
   placeholder,
@@ -47,7 +42,10 @@ export function FilterList({
 }) {
   const [text, setText] = useState("");
   const [matchingOptions, setMatchingOptions] = useState(
-    fuzzySearchAndSort(options, ""),
+    fuzzySearchAndSort(
+      preFilter ? preFilter(options, "") : options,
+      "",
+    ),
   );
   const [selectedOption, setSelectionOption] = useState(0);
 

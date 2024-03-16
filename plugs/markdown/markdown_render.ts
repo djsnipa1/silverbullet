@@ -6,7 +6,8 @@ import {
   removeParentPointers,
   renderToText,
   traverseTree,
-} from "$sb/lib/tree.ts";
+} from "../../plug-api/lib/tree.ts";
+import { encodePageRef, parsePageRef } from "$sb/lib/page_ref.ts";
 import { Fragment, renderHtml, Tag } from "./html_render.ts";
 
 export type MarkdownRenderOptions = {
@@ -38,7 +39,10 @@ function preprocess(t: ParseTree, options: MarkdownRenderOptions = {}) {
     if (!node.type) {
       if (node.text?.startsWith("\n")) {
         const prevNodeIdx = node.parent!.children!.indexOf(node) - 1;
-        if (node.parent!.children![prevNodeIdx]?.type !== "Paragraph") {
+        const prevNodeType = node.parent!.children![prevNodeIdx]?.type;
+        if (
+          prevNodeType?.includes("Heading") || prevNodeType?.includes("Table")
+        ) {
           node.text = node.text.slice(1);
         }
       }
@@ -199,21 +203,26 @@ function render(
         body: "",
       };
     case "Link": {
-      const linkText = t.children![1].text!;
+      const linkTextChildren = t.children!.slice(1, -4);
       const urlNode = findNodeOfType(t, "URL");
       if (!urlNode) {
         return renderToText(t);
       }
       let url = urlNode.children![0].text!;
       if (url.indexOf("://") === -1) {
-        url = `${options.attachmentUrlPrefix || ""}${url}`;
+        if (
+          options.attachmentUrlPrefix &&
+          !url.startsWith(options.attachmentUrlPrefix)
+        ) {
+          url = `${options.attachmentUrlPrefix}${url}`;
+        }
       }
       return {
         name: "a",
         attrs: {
           href: url,
         },
-        body: linkText,
+        body: cleanTags(mapRender(linkTextChildren)),
       };
     }
     case "Image": {
@@ -224,7 +233,12 @@ function render(
       }
       let url = urlNode!.children![0].text!;
       if (url.indexOf("://") === -1) {
-        url = `${options.attachmentUrlPrefix || ""}${url}`;
+        if (
+          options.attachmentUrlPrefix &&
+          !url.startsWith(options.attachmentUrlPrefix)
+        ) {
+          url = `${options.attachmentUrlPrefix}${url}`;
+        }
       }
       return {
         name: "img",
@@ -238,18 +252,17 @@ function render(
 
     // Custom stuff
     case "WikiLink": {
-      // console.log("WikiLink", JSON.stringify(t, null, 2));
       const ref = findNodeOfType(t, "WikiLinkPage")!.children![0].text!;
       let linkText = ref.split("/").pop()!;
       const aliasNode = findNodeOfType(t, "WikiLinkAlias");
       if (aliasNode) {
         linkText = aliasNode.children![0].text!;
       }
-      const [pageName] = ref.split(/[@$]/);
+      const pageRef = parsePageRef(ref);
       return {
         name: "a",
         attrs: {
-          href: `/${pageName}`,
+          href: `/${encodePageRef(pageRef)}`,
           class: "wiki-link",
           "data-ref": ref,
         },
@@ -278,9 +291,9 @@ function render(
     case "Task": {
       let externalTaskRef = "";
       collectNodesOfType(t, "WikiLinkPage").forEach((wikilink) => {
-        const ref = wikilink.children![0].text!;
-        if (!externalTaskRef && (ref.includes("@") || ref.includes("$"))) {
-          externalTaskRef = ref;
+        const pageRef = parsePageRef(wikilink.children![0].text!);
+        if (!externalTaskRef && (pageRef.pos !== undefined || pageRef.anchor)) {
+          externalTaskRef = wikilink.children![0].text!;
         }
       });
 
@@ -330,6 +343,13 @@ function render(
       const command = t.children![1].children![0].text!;
       let commandText = command;
       const aliasNode = findNodeOfType(t, "CommandLinkAlias");
+      const argsNode = findNodeOfType(t, "CommandLinkArgs");
+      let args: any = [];
+
+      if (argsNode) {
+        args = JSON.parse(`[${argsNode.children![0].text!}]`);
+      }
+
       if (aliasNode) {
         commandText = aliasNode.children![0].text!;
       }
@@ -337,7 +357,7 @@ function render(
       return {
         name: "button",
         attrs: {
-          "data-onclick": JSON.stringify(["command", command]),
+          "data-onclick": JSON.stringify(["command", command, args]),
         },
         body: commandText,
       };

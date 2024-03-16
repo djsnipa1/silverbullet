@@ -1,6 +1,6 @@
 import { SpacePrimitives } from "./space_primitives.ts";
+import { FileMeta } from "../../plug-api/types.ts";
 import { flushCachesAndUnregisterServiceWorker } from "../sw_util.ts";
-import { FileMeta } from "$sb/types.ts";
 
 export class HttpSpacePrimitives implements SpacePrimitives {
   constructor(
@@ -43,6 +43,10 @@ export class HttpSpacePrimitives implements SpacePrimitives {
         location.href = result.url;
         throw new Error("Not authenticated");
       }
+      if (result.status === 401) {
+        location.reload();
+        throw new Error("Not authenticated, got 403");
+      }
       return result;
     } catch (e: any) {
       // Errors when there is no internet connection:
@@ -57,6 +61,11 @@ export class HttpSpacePrimitives implements SpacePrimitives {
       if (
         errorMessage.includes("fetch") || errorMessage.includes("load failed")
       ) {
+        console.error(
+          "Got error fetching, throwing offline",
+          url,
+          e,
+        );
         throw new Error("Offline");
       }
       throw e;

@@ -16,13 +16,11 @@ In addition, many objects will also contain:
 Beside these, any number of additional tag-specific and custom [[Attributes]] can be defined (see below).
 
 # Tags
-$tags
 Every object has a main `tag`, which signifies the type of object being described. In addition, any number of additional tags can be assigned as well via the `tags` attribute. You can use either the main `tag` or any of the `tags` as query sources in [[Live Queries]] — examples below.
 
 Here are the currently built-in tags:
 
 ## page
-$page
 Every page in your space is available via the `page` tag. You can attach _additional_ tags to a page, by either specifying them in the `tags` attribute [[Frontmatter]], or by putting additional [[Tags]] in a stand alone paragraph with no other (textual) content in them, e.g.:
 
 #example-tag #another-tag
@@ -30,7 +28,7 @@ Every page in your space is available via the `page` tag. You can attach _additi
 In addition to `ref` and `tags`, the `page` tag defines a bunch of additional attributes as can be seen in this example query:
 
 ```query
-page where name = "{{@page.name}}"
+page where name = @page.name
 ```
 
 Note that you can also query this page using the `example-tag` directly:
@@ -39,8 +37,25 @@ Note that you can also query this page using the `example-tag` directly:
 example-tag
 ```
 
+## table
+Markdown table rows are indexed using the `table` tag, any additional tags can be added using [[Tags]] in any of its cells.
+
+| Title | Description Text |
+| --- | ----- |
+| This is some key | The value contains a #table-tag |
+| Some Row | This is an example row in between two others |
+| Another key | This time without a tag |
+
+
+```query
+table
+```
+
+Table headers will be normalized by converting them to lowercase and replacing all non alphanumeric characters with `_`.
+
 ## task
-$task
+
+task
 Every task in your space is tagged with the `task` tag by default. You tag it with additional tags by using [[Tags]] in the task name, e.g.
 
 * [ ] My task #upnext 
@@ -53,10 +68,10 @@ The following query shows all attributes available for tasks:
 upnext
 ```
 
-Although you may want to render it using a template such as [[template/task]] instead:
+Although you may want to render it using a template such as [[Library/Core/Query/Task]] instead:
 
 ```query
-upnext render [[template/task]]
+upnext render [[Library/Core/Query/Task]]
 ```
 
 ## taskstate
@@ -68,11 +83,10 @@ upnext render [[template/task]]
 And can be queried as follows:
 
 ```query
-taskstate where page = "{{@page.name}}"
+taskstate where page = @page.name
 ```
 
 ## template
-$template
 Indexes all pages tagged with `#template`. See [[Templates]] for more information on templates.
 
 ```query
@@ -81,7 +95,6 @@ template select name limit 5
 
 
 ## item
-$item
 List items (both bullet point and numbered items) are indexed with the `item` tag, and additional tags can be added using [[Tags]].
 
 Here is an example of a #quote item using a custom [[Attributes|attribute]]:
@@ -91,11 +104,10 @@ Here is an example of a #quote item using a custom [[Attributes|attribute]]:
 And then queried via the #quote tag:
 
 ```query 
-quote where page = "{{@page.name}}" and tag = "item" select name, by
+quote where page = @page.name and tag = "item" select name, by
 ```
 
 ## paragraph
-$paragraph
 Top-level paragraphs (that is: paragraphs not embedded in a list) are indexed using the `paragraph` tag, any additional tags can be added using [[Tags]].
 
 A paragraph with a #paragraph-tag.
@@ -105,7 +117,6 @@ paragraph-tag
 ```
 
 ## data
-$data
 You can also embed arbitrary YAML data blocks in pages via fenced code blocks and use a tag as a coding language, e.g.
 
 ```#person
@@ -120,7 +131,6 @@ person
 ```
 
 ## link
-$link
 All page _links_ are tagged with `link`. You cannot attach additional tags to links. The main two attributes of a link are:
 
 * `toPage` the page the link is linking _to_
@@ -133,34 +143,55 @@ _Note_: this is the data source used for the {[Mentions: Toggle]} feature as wel
 Here is a query that shows all links that appear in this particular page:
 
 ```query
-link where page = "{{@page.name}}"
+link where page = @page.name
 ```
 
 ## anchor
-$anchor
-
-[[Anchors]] use the `$myanchor` notation to allow deeplinking into a page and are also indexed and queryable. It is not possible to attach additional tags to an anchor.
+[[Markdown/Anchors]] use the $myanchor notation to allow deeplinking into a page and are also indexed and queryable. It is not possible to attach additional tags to an anchor.
 
 Here is an example query:
 
 ```query
-anchor where page = "{{@page.name}}"
+anchor where page = @page.name
 ```
 
+## header
+Headers (lines starting with `#`, `##` etc.) are indexed as well and queriable.
+
+```query
+header where page = @page.name limit 3
+```
+
+
 ## tag
-$tag
 The ultimate meta tag is _tag_ itself, which indexes for all tags used, in which page they appear and what their “parent tag” is (the context of the tag: either `page`, `item` or `task`).
 
 Here are the tags used/defined in this page:
 
 ```query
-tag where page = "{{@page.name}}" select name, parent
+tag where page = @page.name select name, parent
 ```
 
 ## attribute
-$attribute
 This is another meta tag, which is used to index all [[Attributes]] used in your space. This is used by e.g. attribute completion in various contexts. You likely don’t need to use this tag directly, but it’s there.
 
 ```query
-attribute where page = "{{@page.name}}" limit 1 
+attribute where page = @page.name limit 1 
 ```
+
+# System tags
+The following tags are technically implemented a bit differently than the rest, but they are still available to be queried.
+
+## command
+Enables querying of all [[Commands]] available in SilverBullet as well as their assigned keyboard shortcuts.
+```query
+command order by name limit 5
+```
+
+## syscall
+Enables querying of all [[PlugOS]] syscalls enabled in your space. Mostly useful in the context of [[Plugs]] and [[Space Script]] development.
+
+```query
+syscall limit 5
+```
+

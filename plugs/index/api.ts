@@ -1,9 +1,15 @@
 import { datastore } from "$sb/syscalls.ts";
-import { KV, KvKey, KvQuery, ObjectQuery, ObjectValue } from "$sb/types.ts";
-import { QueryProviderEvent } from "$sb/app_event.ts";
+import {
+  KV,
+  KvKey,
+  KvQuery,
+  ObjectQuery,
+  ObjectValue,
+} from "../../plug-api/types.ts";
+import { QueryProviderEvent } from "../../plug-api/types.ts";
 import { builtins } from "./builtins.ts";
-import { AttributeObject, determineType } from "./attributes.ts";
-import { ttlCache } from "$sb/lib/memory_cache.ts";
+import { determineType } from "./attributes.ts";
+import { ttlCache } from "$lib/memory_cache.ts";
 
 const indexKey = "idx";
 const pageKey = "ridx";
@@ -47,12 +53,17 @@ export async function clearPageIndex(page: string): Promise<void> {
 }
 
 /**
- * Clears the entire datastore for this indexKey plug
+ * Clears the entire page index
  */
 export async function clearIndex(): Promise<void> {
   const allKeys: KvKey[] = [];
   for (
-    const { key } of await datastore.query({ prefix: [] })
+    const { key } of await datastore.query({ prefix: [indexKey] })
+  ) {
+    allKeys.push(key);
+  }
+  for (
+    const { key } of await datastore.query({ prefix: [pageKey] })
   ) {
     allKeys.push(key);
   }
@@ -60,7 +71,7 @@ export async function clearIndex(): Promise<void> {
   console.log("Deleted", allKeys.length, "keys from the index");
 }
 
-// ENTITIES API
+// OBJECTS API
 
 /**
  * Indexes entities in the data store
@@ -176,11 +187,12 @@ export function queryObjects<T>(
 
 export async function query(
   query: KvQuery,
+  variables?: Record<string, any>,
 ): Promise<KV[]> {
   return (await datastore.query({
     ...query,
     prefix: [indexKey, ...query.prefix ? query.prefix : []],
-  })).map(({ key, value }) => ({ key: key.slice(1), value }));
+  }, variables)).map(({ key, value }) => ({ key: key.slice(1), value }));
 }
 
 export function getObjectByRef<T>(
@@ -193,13 +205,14 @@ export function getObjectByRef<T>(
 
 export async function objectSourceProvider({
   query,
+  variables,
 }: QueryProviderEvent): Promise<any[]> {
   const tag = query.querySource!;
   const results = await datastore.query({
     ...query,
     prefix: [indexKey, tag],
     distinct: true,
-  });
+  }, variables);
   return results.map((r) => r.value);
 }
 

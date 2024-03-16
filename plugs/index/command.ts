@@ -1,8 +1,8 @@
 import { editor, events, markdown, mq, space, system } from "$sb/syscalls.ts";
-import { sleep } from "$sb/lib/async.ts";
-import { IndexEvent } from "$sb/app_event.ts";
-import { MQMessage } from "$sb/types.ts";
-import { isTemplate } from "$sb/lib/cheap_yaml.ts";
+import { IndexEvent } from "../../plug-api/types.ts";
+import { MQMessage } from "../../plug-api/types.ts";
+import { isTemplate } from "$lib/cheap_yaml.ts";
+import { sleep } from "$lib/async.ts";
 
 export async function reindexCommand() {
   await editor.flashNotification("Performing full page reindex...");
@@ -10,11 +10,16 @@ export async function reindexCommand() {
   await editor.flashNotification("Done with page index!");
 }
 
-export async function reindexSpace() {
-  console.log("Clearing page index...");
-  // Executed this way to not have to embed the search plug code here
-  await system.invokeFunction("index.clearIndex");
-
+export async function reindexSpace(noClear = false) {
+  if (await system.getMode() === "ro") {
+    console.info("Not reindexing because we're in read-only mode");
+    return;
+  }
+  if (!noClear) {
+    console.log("Clearing page index...");
+    // Executed this way to not have to embed the search plug code here
+    await system.invokeFunction("index.clearIndex");
+  }
   // Load builtins
   await system.invokeFunction("index.loadBuiltinsIntoIndex");
 
@@ -55,16 +60,20 @@ export async function processIndexQueue(messages: MQMessage[]) {
 }
 
 export async function parseIndexTextRepublish({ name, text }: IndexEvent) {
+  if (await system.getMode() === "ro") {
+    console.info("Not reindexing", name, "because we're in read-only mode");
+    return;
+  }
   const parsed = await markdown.parseMarkdown(text);
 
   if (isTemplate(text)) {
-    console.log("Indexing", name, "as template");
+    // console.log("Indexing", name, "as template");
     await events.dispatchEvent("page:indexTemplate", {
       name,
       tree: parsed,
     });
   } else {
-    console.log("Indexing", name, "as page");
+    // console.log("Indexing", name, "as page");
     await events.dispatchEvent("page:index", {
       name,
       tree: parsed,

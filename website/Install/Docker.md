@@ -20,7 +20,7 @@ For your first run, you can run the following:
 # Create a local folder "space" to keep files in
 $ mkdir -p space
 # Run the SilverBullet docker container in the foreground
-$ docker run -it -p 3000:3000 -v ./space:/space zefhemel/silverbullet
+$ sudo docker run -it -p 3000:3000 -v ./space:/space zefhemel/silverbullet
 ```
 
 This will run SilverBullet in the foreground, interactively, so you can see the logs and instructions. 
@@ -35,8 +35,10 @@ $ docker run -d --restart unless-stopped --name silverbullet -p 3000:3000 -v ./s
 
 There you go!
 
+Note that to get offline mode to work you need to serve SilverBullet with HTTPS, via for example a reverse proxy.
+
 # Versions
-The `zefhemel/silverbullet` image will give you the latest released version. This is equivalent to `zefhemel/silverbullet:latest`. If you prefer, you can also pin to a specific release, e.g. `zefhemel/silverbullet:0.5.5`. If you prefer to live on the bleeding edge, you can use the `zefhemel/silverbullet:edge` image, which is updated on every commit to the `main` brain. This is the YOLO option.
+The `zefhemel/silverbullet` image will give you the latest released version. This is equivalent to `zefhemel/silverbullet:latest`. If you prefer, you can also pin to a specific release, e.g. `zefhemel/silverbullet:0.6.0`. If you prefer to live on the bleeding edge, you can use the `zefhemel/silverbullet:edge` image, which is updated on every commit to the `main` brain. This is the YOLO option.
 
 ## Upgrade
 You can upgrade SilverBullet as follows:
@@ -49,7 +51,7 @@ $ docker kill silverbullet
 # Remove the old container
 $ docker rm silverbullet
 # Start a fresh one (same command as before)
-$ docker run -d --restart unless-stopped --name silverbullet -p 3000:3000 -v ./space:/space zefhemel/silverbullet
+$ docker run -d --restart unless-stopped --name silverbullet -p 3000:3000 -v $PW/space:/space zefhemel/silverbullet
 ```
 
 Since this is somewhat burdensome, it is recommended you use a tool like [watchtower](https://github.com/containrrr/watchtower) to automatically update your docker images and restart them. However, if we go there — we may as well use a tool like _docker compose_ to manage your containers, no?

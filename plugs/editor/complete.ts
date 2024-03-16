@@ -1,24 +1,40 @@
-import { CompleteEvent } from "$sb/app_event.ts";
-import { FileMeta, PageMeta } from "$sb/types.ts";
+import { CompleteEvent, FileMeta, PageMeta } from "../../plug-api/types.ts";
 import { cacheFileListing } from "../federation/federation.ts";
 import { queryObjects } from "../index/plug_api.ts";
 
 // Completion
 export async function pageComplete(completeEvent: CompleteEvent) {
-  const match = /\[\[([^\]@$:\{}]*)$/.exec(completeEvent.linePrefix);
+  const match = /\[\[([^\]@$#:\{}]*)$/.exec(completeEvent.linePrefix);
   if (!match) {
     return null;
   }
-  // When we're in fenced code block, we likely want to complete a page name without an alias, and only complete template pages
-  // so let's check if we're in a template context
-  const isInTemplateContext =
+
+  let allPages: PageMeta[] = [];
+
+  if (
     completeEvent.parentNodes.find((node) => node.startsWith("FencedCode")) &&
-    // either a render [[bla]] clause or page: "[[bla]]" template block
-    /render\s+\[\[|page:\s*["']\[\[/.test(
+    // either a render [[bla]] clause
+    /(render\s+|template\()\[\[/.test(
       completeEvent.linePrefix,
-    );
-  const tagToQuery = isInTemplateContext ? "template" : "page";
-  let allPages: PageMeta[] = await queryObjects<PageMeta>(tagToQuery, {}, 5);
+    )
+  ) {
+    // We're in a template context, let's only complete templates
+    allPages = await queryObjects<PageMeta>("template", {}, 5);
+  } else if (
+    completeEvent.parentNodes.find((node) =>
+      node.startsWith("FencedCode:include") ||
+      node.startsWith("FencedCode:template")
+    )
+  ) {
+    // Include both pages and templates in page completion in ```include and ```template blocks
+    allPages = await queryObjects<PageMeta>("page", {}, 5);
+  } else {
+    // Otherwise, just complete non-template pages
+    allPages = await queryObjects<PageMeta>("page", {
+      filter: ["!=", ["attr", "tags"], ["string", "template"]],
+    }, 5);
+  }
+
   const prefix = match[1];
   if (prefix.startsWith("!")) {
     // Federation prefix, let's first see if we're matching anything from federation that is locally synced
@@ -48,7 +64,7 @@ export async function pageComplete(completeEvent: CompleteEvent) {
         completions.push({
           label: `${pageMeta.displayName}`,
           boost: new Date(pageMeta.lastModified).getTime(),
-          apply: isInTemplateContext
+          apply: pageMeta.tag === "template"
             ? pageMeta.name
             : `${pageMeta.name}|${pageMeta.displayName}`,
           detail: `displayName for: ${pageMeta.name}`,
@@ -60,7 +76,7 @@ export async function pageComplete(completeEvent: CompleteEvent) {
           completions.push({
             label: `${alias}`,
             boost: new Date(pageMeta.lastModified).getTime(),
-            apply: isInTemplateContext
+            apply: pageMeta.tag === "template"
               ? pageMeta.name
               : `${pageMeta.name}|${alias}`,
             detail: `alias to: ${pageMeta.name}`,

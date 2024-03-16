@@ -1,13 +1,12 @@
-import { YAML } from "$sb/plugos-syscall/mod.ts";
-
 import {
   addParentPointers,
   ParseTree,
   renderToText,
   replaceNodesMatchingAsync,
   traverseTreeAsync,
-} from "$sb/lib/tree.ts";
-import { expandPropertyNames } from "$sb/lib/json.ts";
+} from "./tree.ts";
+import { expandPropertyNames } from "./json.ts";
+import { YAML } from "../syscalls.ts";
 
 export type FrontMatter = { tags?: string[] } & Record<string, any>;
 
@@ -84,6 +83,9 @@ export async function extractFrontmatter(
         // support "tag1, tag2" as well as "tag1 tag2" as well as "#tag1 #tag2" notations
         if (typeof data.tags === "string") {
           tags.push(...(data.tags as string).split(/,\s*|\s+/));
+        }
+        if (Array.isArray(data.tags)) {
+          tags.push(...data.tags);
         }
 
         if (options.removeKeys && options.removeKeys.length > 0) {

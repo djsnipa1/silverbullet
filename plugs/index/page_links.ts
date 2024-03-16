@@ -1,10 +1,12 @@
 import { findNodeOfType, renderToText, traverseTree } from "$sb/lib/tree.ts";
-import { IndexTreeEvent } from "$sb/app_event.ts";
+import { IndexTreeEvent } from "../../plug-api/types.ts";
 import { resolvePath } from "$sb/lib/resolve.ts";
 import { indexObjects, queryObjects } from "./api.ts";
-import { ObjectValue } from "$sb/types.ts";
+import { ObjectValue } from "../../plug-api/types.ts";
 import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
 import { updateITags } from "$sb/lib/tags.ts";
+import { parsePageRef } from "$sb/lib/page_ref.ts";
+import { extractSnippetAroundIndex } from "./snippet_extractor.ts";
 
 const pageRefRegex = /\[\[([^\]]+)\]\]/g;
 
@@ -19,30 +21,6 @@ export type LinkObject = ObjectValue<{
   asTemplate: boolean;
 }>;
 
-export function extractSnippet(text: string, pos: number): string {
-  let prefix = "";
-  for (let i = pos - 1; i > 0; i--) {
-    if (text[i] === "\n") {
-      break;
-    }
-    prefix = text[i] + prefix;
-    if (prefix.length > 25) {
-      break;
-    }
-  }
-  let suffix = "";
-  for (let i = pos; i < text.length; i++) {
-    if (text[i] === "\n") {
-      break;
-    }
-    suffix += text[i];
-    if (suffix.length > 25) {
-      break;
-    }
-  }
-  return prefix + suffix;
-}
-
 export async function indexLinks({ name, tree }: IndexTreeEvent) {
   const links: ObjectValue<LinkObject>[] = [];
   // [[Style Links]]
@@ -56,12 +34,12 @@ export async function indexLinks({ name, tree }: IndexTreeEvent) {
       const wikiLinkAlias = findNodeOfType(n, "WikiLinkAlias");
       let toPage = resolvePath(name, wikiLinkPage.children![0].text!);
       const pos = wikiLinkPage.from!;
-      toPage = toPage.split(/[@$]/)[0];
+      toPage = parsePageRef(toPage).page;
       const link: LinkObject = {
         ref: `${name}@${pos}`,
         tag: "link",
         toPage: toPage,
-        snippet: extractSnippet(pageText, pos),
+        snippet: extractSnippetAroundIndex(pageText, pos),
         pos,
         page: name,
         asTemplate: false,
@@ -89,14 +67,14 @@ export async function indexLinks({ name, tree }: IndexTreeEvent) {
         const code = codeText.children![0].text!;
         const matches = code.matchAll(pageRefRegex);
         for (const match of matches) {
-          const pageRefName = resolvePath(name, match[1]);
+          const pageRefName = resolvePath(name, parsePageRef(match[1]).page);
           const pos = codeText.from! + match.index! + 2;
           const link = {
             ref: `${name}@${pos}`,
             tag: "link",
             toPage: pageRefName,
             page: name,
-            snippet: extractSnippet(pageText, pos),
+            snippet: extractSnippetAroundIndex(pageText, pos),
             pos: pos,
             asTemplate: true,
           };
