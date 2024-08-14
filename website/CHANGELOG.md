@@ -1,12 +1,99 @@
-An attempt at documenting the changes/new features introduced in each
-release.
+An attempt at documenting the changes/new features introduced in each release.
 
 ---
 
 ## Edge
 _These features are not yet properly released, you need to use [the edge builds](https://community.silverbullet.md/t/living-on-the-edge-builds/27) to try them._
 
-* Nothing new since 0.7.6 yet!
+* Widget buttons for [[Transclusions]] (by [onespaceman](https://github.com/silverbulletmd/silverbullet/pull/1013))
+* SETTINGS is now first indexed, when a full space reindex needs to happen.
+* Internal refactor, and more leverage of [JSR](https://jsr.io/). The SilverBullet [plug API](https://jsr.io/@silverbulletmd/silverbullet) is now published on JSR as well, and soon this will be the preferred way of importing the plug APIs.
+* In [[Space Script]], all syscalls are now exposed via “globals”, so they can be called using e.g. `editor.flashNotification("hello")` instead of `syscall("editor.flashNotification", "hello")`. The old way still works, but the new way is way cleaner.
+* And these syscalls are now [fully documented](https://jsr.io/@silverbulletmd/silverbullet/doc/syscalls/~)
+
+## 0.9.0
+This is a more major version bump due to [[Space Config]], which is a bigger architectural change. It shouldn’t break anything for existing users — but you know — famous last words.
+
+* [[Space Config]] is here! We hear you like Space stuff ([[Space Script]] and [[Space Style]]) so we keep adding more! This allows you to distribute your [[^SETTINGS]] across pages. A few things of note:
+  * This is quite a _deep architectural change_ so I may have accidentally broken things I didn’t intend to, please report issues.
+  * There is now a `@config` global variable that you can reference from anywhere containing the space’s currently active full configuration
+  * There is now linting (checking) of `space-config` blocks, checking that you use built-in configuration keys correctly and reporting errors if not. Later this will be extended to allow plugs and space scripts to define custom validators as well (based on JSON schema).
+  * Possible side-effect: if you configured a custom `indexPage` and are upgrading, it may be that your initial load brings you back to `index`. Just let the space reindex finish and reload and you should be good.
+  * **Plug developers**: If you were using the `readSetting` library call, please switch to using the new `system.getSpaceConfig()` syscall instead once this is released. `readSetting` read the `SETTINGS` page only, this may now no longer give the full picture.
+* [[Transclusions]] now support audio, video and PDFs in addition to images (by [onespaceman](https://github.com/silverbulletmd/silverbullet/pull/1008))
+* New [[^Library/Core/Page/Space Overview]] library page part of the [[Library/Core]] Library that lists all of your [[Space Config]], [[Space Style]] and [[Space Script]] as well as some other fun stats.
+* Support for adding CSS classes in [[Page Decorations]] (by [onespaceman](https://github.com/silverbulletmd/silverbullet/pull/945)). Check out [[Page Decorations#Use case: pimp my page]] 🤣
+* Added caching to file listings (useful for large spaces or slow disks) (by [Justyn Shull](https://github.com/silverbulletmd/silverbullet/pull/1012))
+
+## 0.8.5
+* New power-user feature: [[Object Decorators]]. Its primary use case is to apply [[Page Decorations]], but you may find other uses as well. Speaking of which...
+* **Breaking change:** The way [[Page Decorations]] are specified has changed. It has now been replaced with [[Object Decorators]](as just mentioned), which are a more generic mechanism. Your existing `pageDecorations` will stop working. You’ll have to rewrite based on the new format. See [[Page Decorations]] for examples.
+* New [[CHANGELOG@L20]] syntax (by [Marek S. Łukasiewicz](https://github.com/silverbulletmd/silverbullet/pull/988))
+* [[Library/Core]] library updates (run {[Libraries: Update]} to get it):
+  * [[^Library/Core/Widget/Table of Contents]] widget can now be disabled using a [[Page Decorations|Page Decoration]]
+  * [[Library/Core/Quick Notes]] now orders quick notes in reverse-chronological order
+* **Fix:** Spellchecker correction was broken in Chrome
+* **Fix:** Markdown preview was broken
+
+## 0.8.4
+* [[Page Picker#Keyboard shortcuts]]: allow folder completion using Shift-Space (by [Marek S. Łukasiewicz](https://github.com/silverbulletmd/silverbullet/pull/961))
+* New [[Page Decorations]]: ability to hide pages from the page picker and auto complete (by [Marek S. Łukasiewicz](https://github.com/silverbulletmd/silverbullet/pull/962))
+* The [[Expression Language]] now supports decimal numbers 🤯 (e.g. `3.14`)
+* Non-existing pages that have been previously linked to (so effectively: broken links) now appear in the [[Page Picker]] (with a “Create page” hint) as well as in [[Links]] auto complete (marked as “Linked but not created”). This should make it easier to “fill in the gaps”: you can liberally create page links, and create those pages later easily via the page picker.
+* New [[Space Script]] feature: [[Space Script#Custom HTTP endpoints]]: create custom endpoints on your SilverBullet server (under the `/_/` prefix).
+* Updated the [[^Library/Core/New Page/Quick Note]] template to now use a (Windows and Android) naming pattern using the new `safeTime` function, also tweaked the naming pattern slightly (put a `/` in between the date and time so that these are organized by date), updated [[Library/Core/Quick Notes]] to show full path.
+* Added Ruby [[Markdown/Syntax Highlighting]] (by [Bo Jeanes](https://github.com/silverbulletmd/silverbullet/pull/966))
+* **Fix**: Due to some race conditions some situations pages would disappear from the index (e.g. from the [[Page Picker]]), this should now be fixed
+* New [[SETTINGS]]: `pwaOpenLastPage` and `useSmartQuotes` (latter by [Marek S. Łukasiewicz](https://github.com/silverbulletmd/silverbullet/pull/960))
+* **Fix**: CORS issues in Firefox (admonition related) (by [onespaceman](https://github.com/silverbulletmd/silverbullet/pull/964))
+* **Technical:** Did another round of dependency upgrades and cleaned up some dead code.
+
+---
+
+## 0.8.2
+* [[Page Decorations]] are here (initial implementation by [Deepak Narayan](https://github.com/silverbulletmd/silverbullet/pull/940), later refined by Zef)
+* New type of [[Shortcuts|shortcut]]: `slashCommand`
+* Naming is hard. Renamed the `source` attribute of [[Libraries]] to `import`. egacy references to `source` will keep working.
+* Added support for [[Links#Caret page links]] making it slightly more convenient to link to [[Meta Pages]]
+* **Fix:** Remove redundant vertical space for some tables (by [Eric Yang](https://github.com/silverbulletmd/silverbullet/pull/952))
+* **Fix:** very large spaces would let the server blow up when saving snapshots. This is now fixed.
+* **Fix:** Conflict copies could no longer be edited, whoops (initial fix by [Semyon Novikov](https://github.com/silverbulletmd/silverbullet/pull/939), later refined by Zef)
+* **Fix**: `silverbullet upgrade` should now work again (or at least on the next upgrade)
+
+---
+
+## 0.8.1
+* The old **Template Picker** has now been rebranded to [[Meta Picker]] and surfaces pages in your space tagged as `#template` or `#meta`. Read more about this in [[Meta Pages]].
+* [[Transclusions]] has now been implemented, allowing inline embedding of other pages as well as images (by onespaceman) using the convenient `![[link]]` syntax.
+* [[Libraries]] management has been rethought. You can now decoratively specify them in [[SETTINGS]] and keep them up to date with the {[Libraries: Update]} command.
+* For new spaces, the default [[SETTINGS]] page is now tagged with `#meta`, which means it will only appear in the [[Meta Picker]]. There is also a new {[Navigate: Open SETTINGS]} command (bound to `Ctrl-,` and `Cmd-,`).
+* Attachments are now indexed, and smartly moved when pages are renamed (by onespaceman)
+* Images can now be resized: [[Attachments#Embedding]] (initial work done by [Florent](https://github.com/silverbulletmd/silverbullet/pull/833), later adapted by onespaceman)
+* To make pure reading and browsing on touch devices a nicer experience, there is now a new **edit toggle** (top right). When _disabled_, you switch to _reader mode_ which makes sure your software keyboard doesn’t block the screen when navigating your space. This button is only visible on mobile devices (no physical keyboard attached) only. Can be disabled via the `hideEditButton` [[SETTINGS]] (and is disabled on this website, that’s why you don’t see it).
+* Super^script^ and Sub~script~ are now supported (by [MrMugame](https://github.com/silverbulletmd/silverbullet/pull/879))
+* Added a {[Delete Line]} command (by [pihentagy](https://github.com/silverbulletmd/silverbullet/pull/866))
+* Improved selection behavior (by [MrMugame](https://github.com/silverbulletmd/silverbullet/pull/904))
+* Hide `\` escapes in [[Live Preview]] (by [MrMugame](https://github.com/silverbulletmd/silverbullet/pull/901))
+* Added Erlang [[Markdown/Syntax Highlighting]]
+* Dates (formatted as e.g. `2023-07-01` or `2023-07-01 23:33`) in [[Frontmatter]] are now converted into strings (rather than empty objects)
+* **Breaking change:** The legacy handlebars template syntax that supported `{{escapeRegex "something"}}` function calls (rather than `{{escapeRegex("something")}}`) has now been removed.
+* `task` and `item` objects now have an additional `text` attribute that contains the full text of the item and/or task, with any [[Attributes]] and [[Tags]] intact (whereas they are removed from `name`)
+* The `#boot` PWA loading the last opened page feature is back (put `#boot` at the end of your SilverBullet URL to auto load the last opened page)
+* Numerous other bug fixes (thanks MrMugame and onespaceman)
+---
+
+## 0.7.7
+* Added ability to configure PWA app name and description (web app manifest) via [[Install/Configuration]] variables (by [s1gnate-sync](https://github.com/silverbulletmd/silverbullet/pull/854))
+* Improved styling for modals (by [Daniel](https://github.com/silverbulletmd/silverbullet/pull/840))
+* Allow middle click to open links (by [Daniel](https://github.com/silverbulletmd/silverbullet/pull/841))
+* Various theme fixes (by [onespaceman](https://github.com/silverbulletmd/silverbullet/pull/831))
+* Fix Int polyfill (by [Daniel](https://github.com/silverbulletmd/silverbullet/pull/836))
+* Make maximum attachment size configurable (by [Thomas](https://github.com/silverbulletmd/silverbullet/pull/832))
+* Fix frontmatter tag indexing when tags are numbers (by [Justyn](https://github.com/silverbulletmd/silverbullet/pull/830))
+* Fix for supporting page names with spaces at the tail or front end (by [Florent](https://github.com/silverbulletmd/silverbullet/pull/817))
+* On the technical side:
+  * Radically improved dependency management in the code base (by [Maks](https://github.com/silverbulletmd/silverbullet/pull/770))
+* Dependency bumps for a lot of codemirror-related packages as well as Deno itself
 
 ---
 
@@ -136,7 +223,7 @@ So, what’s the fuss all about?
   * Reload your page 2-3x to be sure you have the latest front-end code running.
   * Run the {[Library: Import]} command in your space, and enter the following federation URL: `!silverbullet.md/Library/` This will import both the [[Library/Core]] and [[Library/Journal]] libraries into your space, bringing you roughly on par with 0.5.x versions in terms of functionality (this will include the daily note, weekly note, various slash commands etc.)
 * A **quick FAQ** on the new template system:
-  * **Where did my templates go!?** They have now moved to the [[Template Picker]], run {[Navigate: Page Picker]} (or press `Cmd-Shift-t` on Mac or `Ctrl-Shift-t` on Windows/Linux) to get to them.
+  * **Where did my templates go!?** They have now moved to the [[Meta Picker]], run {[Navigate: Page Picker]} (or press `Cmd-Shift-t` on Mac or `Ctrl-Shift-t` on Windows/Linux) to get to them.
   * **Where did all my slash commands go?!** They are now distributed via [[Libraries]]. Yep, Libraries are here, enabling an easier way to distribute templates and pages. Read [[Libraries]] for more info.
   * **But, what about slash templates etc.?!** Yeah, we did some rebranding and changed how these are defined. Slash templates are now [[Snippets]] and cannot _just_ be instantiated via [[Slash Commands]], but through [[Commands]] and custom keybindings as well. Awesomeness.
   * **And my page templates broke!?** Yeah, same story as with [[Snippets]]: the format for defining these changed a bit, but it should be easy to update to the new format: check [[Page Templates]].
@@ -148,7 +235,7 @@ So, what’s the fuss all about?
   * The new `itags` attribute (available in many objects) includes both the `tag` and `tags` as well as any tags inherited from the page the object appears in.
   * Page tags now no longer need to appear at the top of the page, but can appear anywhere as long as they are the only thing appearing in a paragraph with no additional text; see [[Objects#page]].
 * New [[Markdown/Code Widgets|Code Widget]]: `toc` to manually include a [[Table of Contents]]
-* Filter list (used by [[Page Picker]], [[Template Picker]] and [[Command Palette]]) improvements:
+* Filter list (used by [[Page Picker]], [[Meta Picker]] and [[Command Palette]]) improvements:
   * Better ranking
   * Better positioning of modal (especially on mobile)
   * Better mouse behavior
@@ -262,7 +349,6 @@ Oh boy, this is a big one. This release brings you the following:
 * The query syntax used in [[Live Queries]] (but also used in directives) has been significantly expanded, although there may still be bugs. There’s still more value to be unlocked here in future releases.
 * The previous “backlinks” plug is now built into SilverBullet as [[Linked Mentions]] and appears at the bottom of every page (if there are incoming links). You can toggle linked mentions via {[Mentions: Toggle]}.
 * A whole bunch of [[PlugOS]] syscalls have been updated. I’ll do my best update known existing plugs, but if you built existing ones some things may have broken. Please report anything broken in [Github issues](https://github.com/silverbulletmd/silverbullet/issues).
-* This release effectively already removes the `#eval` (it’s still there, but likely not working), this directive needs some rethinking. Join us on [Discord](https://discord.gg/EvXbFucTxn) if you have a use case for it and how you use/want to use it.
 
 **Important**:
 * If you have plugs such as “backlinks” or “graphview” installed, please remove them (or to be safe: all plugs) from the `_plug` folder in your space after the upgrade. Then, also remove them from your `PLUGS` page. The backlinks plug is now included by default (named [[Linked Mentions]]), and GraphView still needs to be updated (although it’s been kind of abandoned by the author).

@@ -2,8 +2,9 @@ import {
   findNodeOfType,
   renderToText,
   replaceNodesMatching,
-} from "$sb/lib/tree.ts";
-import { markdown } from "$sb/syscalls.ts";
+} from "@silverbulletmd/silverbullet/lib/tree";
+import { markdown } from "@silverbulletmd/silverbullet/syscalls";
+import { isLocalPath } from "@silverbulletmd/silverbullet/lib/resolve";
 
 export function encodePageUrl(name: string): string {
   return name;
@@ -43,7 +44,7 @@ export async function cleanMarkdown(
     }
     if (n.type === "URL") {
       const url = n.children![0].text!;
-      if (url.indexOf("://") === -1) {
+      if (isLocalPath(url)) {
         n.children![0].text = `fs/${url}`;
       }
       console.log("Link", url);

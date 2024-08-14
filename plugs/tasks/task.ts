@@ -1,6 +1,12 @@
 import type { ClickEvent, IndexTreeEvent } from "../../plug-api/types.ts";
 
-import { editor, events, markdown, space, sync } from "$sb/syscalls.ts";
+import {
+  editor,
+  events,
+  markdown,
+  space,
+  sync,
+} from "@silverbulletmd/silverbullet/syscalls";
 
 import {
   addParentPointers,
@@ -9,25 +15,29 @@ import {
   findNodeOfType,
   findParentMatching,
   nodeAtPos,
-  ParseTree,
+  type ParseTree,
   renderToText,
   replaceNodesMatching,
   traverseTreeAsync,
 } from "../../plug-api/lib/tree.ts";
 import { niceDate } from "$lib/dates.ts";
-import { extractAttributes } from "$sb/lib/attribute.ts";
-import { rewritePageRefs } from "$sb/lib/resolve.ts";
-import { ObjectValue } from "../../plug-api/types.ts";
+import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
+import { rewritePageRefs } from "@silverbulletmd/silverbullet/lib/resolve";
+import type { ObjectValue } from "../../plug-api/types.ts";
 import { indexObjects, queryObjects } from "../index/plug_api.ts";
-import { updateITags } from "$sb/lib/tags.ts";
-import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
-import { parsePageRef } from "$sb/lib/page_ref.ts";
+import { updateITags } from "@silverbulletmd/silverbullet/lib/tags";
+import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import {
+  parsePageRef,
+  positionOfLine,
+} from "@silverbulletmd/silverbullet/lib/page_ref";
 
 export type TaskObject = ObjectValue<
   {
     page: string;
     pos: number;
     name: string;
+    text: string;
     done: boolean;
     state: string;
     deadline?: string;
@@ -70,6 +80,7 @@ export async function indexTasks({ name, tree }: IndexTreeEvent) {
       ref: `${name}@${n.from}`,
       tag: "task",
       name: "",
+      text: "",
       done: complete,
       page: name,
       pos: n.from!,
@@ -78,6 +89,10 @@ export async function indexTasks({ name, tree }: IndexTreeEvent) {
 
     rewritePageRefs(n, name);
 
+    // The task text is everything after the task marker
+    task.text = n.children!.slice(1).map(renderToText).join("").trim();
+
+    // This finds the deadline and tags, and removes them from the tree
     replaceNodesMatching(n, (tree) => {
       if (tree.type === "DeadlineDate") {
         task.deadline = getDeadline(tree);
@@ -96,7 +111,6 @@ export async function indexTasks({ name, tree }: IndexTreeEvent) {
     });
 
     // Extract attributes and remove from tree
-    task.name = n.children!.slice(1).map(renderToText).join("").trim();
     const extractedAttributes = await extractAttributes(
       ["task", ...task.tags || []],
       n,
@@ -214,10 +228,13 @@ export async function updateTaskState(
   if (page === currentPage) {
     // In current page, just update the task marker with dispatch
     const editorText = await editor.getText();
+    const targetPos = pos instanceof Object
+      ? positionOfLine(editorText, pos.line, pos.column)
+      : pos;
     // Check if the task state marker is still there
     const targetText = editorText.substring(
-      pos + 1,
-      pos + 1 + oldState.length,
+      targetPos + 1,
+      targetPos + 1 + oldState.length,
     );
     if (targetText !== oldState) {
       console.error(
@@ -228,8 +245,8 @@ export async function updateTaskState(
     }
     await editor.dispatch({
       changes: {
-        from: pos + 1,
-        to: pos + 1 + oldState.length,
+        from: targetPos + 1,
+        to: targetPos + 1 + oldState.length,
         insert: newState,
       },
     });
@@ -237,8 +254,11 @@ export async function updateTaskState(
     let text = await space.readPage(page);
 
     const referenceMdTree = await markdown.parseMarkdown(text);
+    const targetPos = pos instanceof Object
+      ? positionOfLine(text, pos.line, pos.column)
+      : pos;
     // Adding +1 to immediately hit the task state node
-    const taskStateNode = nodeAtPos(referenceMdTree, pos + 1);
+    const taskStateNode = nodeAtPos(referenceMdTree, targetPos + 1);
     if (!taskStateNode || taskStateNode.type !== "TaskState") {
       console.error(
         "Reference not a task marker, out of date?",

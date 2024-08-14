@@ -17,7 +17,10 @@ While a custom language, it takes a lot of inspiration from JavaScript and SQL, 
   * `.` for the current object
   * `attr` for the current object’s attribute with the name `attr`
   * `<expression>.attr` to access an attribute from the object that `<expression>` evaluates to
-* variables: `@page`
+* variables:
+  * `@page` points to the currently open page
+  * `@config` contains the space’s current [[Space Config]]
+  * Variables defined through `#let` or `#each` directives in [[Template Language]]
 
 ## Examples
 ```template
@@ -28,10 +31,11 @@ Attribute of variable: {{@page.name}}
 
 # Function calls
 * `functionName(argument1, argument2, ...)`: call function `functionName`
-* `functionName`: call `functionName` without any arguments
+* `functionName()` or `functionName`: call function `functionName` without arguments
 
 ## Examples
 ```template
+contains with argument list: {{contains("FizzBuzz", "Fizz")}}
 Today with argument list: {{today()}}
 Today without an argument list: {{today}}
 ```
@@ -62,9 +66,9 @@ A rendered query:
 Page references use the `[[page name]]` syntax and evaluate to the content of the referenced page (as a string), this makes them a good candidate to be used in conjunction with [[Functions#template(text, value)]] or to simply inline another page:
 
 ```template
-Including another page directly, without template rendering: {{[[internal/test page]]}}
+Including another page directly, without template rendering: {{[[internal/test page with template]]}}
 
-And rendered as a template: {{template([[internal/test page]], "actual value")}}
+And rendered as a template: {{template([[internal/test page with template]], "actual value")}}
 ```
 
 # Logical expressions 
@@ -86,7 +90,7 @@ Simple boolean expression: {{"pete" = "pete" or "hank" = "pete"}}
 * `<=` less than or equals, e.g. `age <= 10`
 * `>` greater than, e.g. `age > 10`
 * `>=` greater than or equals, e.g. `age >= 10`
-* `=~` to match against a regular expression, e.g. `name =~ /^template\//`
+* `=~` to match against a regular expression, e.g. `name =~ /^template\//` (the operand can either be a regular expression or a string expression that will be turned into a regular expression)
 * `!=~` to not match a regular expression, e.g. `name !=~ /^template\//`
 * `in` member of a list (e.g. `prop in ["foo", "bar"]`)
 * `+` addition (can also concatenate strings), e.g. `10 + 12` or `name + "!!!"`

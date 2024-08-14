@@ -1,14 +1,13 @@
 Space Script allows you to extend SilverBullet with JavaScript from within your space using `space-script` [[Blocks]]. It’s script... in (your) [[Spaces|space]]. Get it?
 
-> **warning** **Experimental**
-> This is an experimental feature that is under active development and consideration. Its APIs are likely to evolve, and the feature could potentially be removed altogether. Feel free to experiment with it and give feedback on [our community](https://community.silverbullet.md/).
-
 > **warning** **Security**
 > Space script allows for arbitrary JavaScript to be run in the client and server, there are security risks involved **if malicious users get write access to your space (folder)** or if you copy & paste random scripts from the Internet without understanding what they do.
 > If this makes you very queazy, you can disable Space Script by setting the `SB_SPACE_SCRIPT` environment variable to `off`
 
 # Creating scripts
-Space scripts are defined by simply using `space-script` fenced code blocks in your space. You will get JavaScript [[Markdown/Syntax Highlighting]] for these blocks.
+Space scripts are defined by simply using `space-script` fenced code blocks in your space. This can happen on any [[Pages]] you like, but for organizational reasons it’s recommended you put them on [[Meta Pages]].
+
+You will get JavaScript [[Markdown/Syntax Highlighting]] for these blocks.
 
 Here is a trivial example:
 
@@ -37,7 +36,7 @@ Depending on where code is run (client or server), a slightly different JavaScri
 * `silverbullet.registerCommand(def, callback)`: registers a custom command (see [[#Custom commands]]).
 * `silverbullet.registerEventListener`: registers an event listener (see [[#Custom event listeners]]).
 * `silverbullet.registerAttributeExtractor(def, callback)`: registers a custom attribute extractor.
-* `syscall(name, args...)`: invoke a syscall (see [[#Syscalls]]).
+* Various SilverBullet syscalls, see [[#Syscalls]]
 
 Many standard JavaScript APIs are available, such as:
 
@@ -56,16 +55,16 @@ The `silverbullet.registerFunction` API takes two arguments:
 * `callback`: the callback function to invoke (can be `async` or not)
 
 ## Example
-Even though a [[Functions#readPage(name)]] function already exist, you could implement it in space script as follows (let’s name it `myReadPage`) using the `syscall` API (detailed further in [[#Syscalls]]):
+Even though a [[Functions#readPage(name)]] function already exist, you could implement it in space script as follows (let’s name it `myReadPage`) using the [space.readPage](https://jsr.io/@silverbulletmd/silverbullet/doc/syscalls/~/space.readPage) syscall:
 
 ```space-script
 silverbullet.registerFunction({name: "myReadPage"}, async (name) => {
-  const pageContent = await syscall("space.readPage", name);
+  const pageContent = await space.readPage(name);
   return pageContent;
 })
 ```
 
-Note: this could be written more succinctly, but this demonstrates how to use `async` and `await` in space script as well.
+**Note:** this could be written more succinctly, but this demonstrates how to use `async` and `await` in space script as well.
 
 This function can be invoked as follows:
 
@@ -80,7 +79,7 @@ Here is an example of defining a custom command using space script:
 
 ```space-script
 silverbullet.registerCommand({name: "My First Command"}, async () => {
-  await syscall("editor.flashNotification", "Hello there!");
+  await editor.flashNotification("Hello there!");
 });
 ```
 
@@ -124,7 +123,7 @@ silverbullet.registerEventListener({name: "task:stateChange"}, async (event) => 
   const {from, to, newState} = event.data;
   if(newState !== " ") {
     // Now dispatch an editor change to add the completion date at the end of the task
-    await syscall("editor.dispatch", {
+    await editor.dispatch({
       changes: {
         from: to, // insert at the end of the task
         insert: " ✅ " + Temporal.Now.plainDateISO().toString(),
@@ -133,6 +132,61 @@ silverbullet.registerEventListener({name: "task:stateChange"}, async (event) => 
   }
 });
 ```
+
+## Custom HTTP endpoints
+Using the `registerEventListener` mechanism it is possible to expose custom HTTP endpoint on your SilverBullet’s server under the `/_/` prefix.
+
+Whenever a HTTP request is sent to your SilverBullet server under this prefix, for instance `https://notes.myserver.com/_/hello` a `http:request:/hello` event is emitted. If a handler responds to it, this response will be used as the HTTP response.
+
+> **warning** Warning
+> Custom HTTP endpoints are not authenticated. If you want to add authentication, you have to do this manually, e.g. by checking for an “Authorization” header in your code.
+
+For `http:request:*` events, the `data` key takes the shape of a EndpointRequest object, which in TypeScript is defined as follows:
+
+```typescript
+type EndpointRequest = {
+  // The HTTP method, e.g. GET, POST, PUT, DELETE
+  method: string;
+  // The full HTTP request path, e.g. /_/hello
+  fullPath: string;
+  // The cleaned up request path (without the /_ prefix), e.g. /hello
+  path: string;
+  // URL request parameters (?name=Pete)
+  query: Record<string, string>;
+  // Request headers
+  headers: Record<string, string>;
+  // Request body
+  body: any;
+};
+```
+
+The callback function should then return an object in the following shape:
+
+```typescript
+type EndpointResponse = {
+  // HTTP status code, e.g. 200, 404, 500
+  status?: number;
+  // Response headers
+  headers?: Record<string, string>;
+  // Response body, either a string, UInt8Array or JSON object
+  body: any;
+};
+```
+
+### Example
+```space-script
+silverbullet.registerEventListener({name: "http:request:/echo"}, (event) => {
+  const req = event.data;
+  // Simply echo back the request
+  return {
+    body: JSON.stringify(req, null, 2)
+  };
+});
+```
+
+You can try it out here: https://silverbullet.md/_/echo
+
+**Note:** Since event names support wildcards, you can write event listeners to prefixes as well, e.g. `http:request:/something/*`.
 
 # Custom attribute extractors
 SilverBullet indexes various types of content as [[Objects]]. There are various ways to define [[Attributes]] for these objects, such as the [attribute: my value] syntax. However, using space script you can write your own code to extract attribute values not natively supported using the registerAttributeExtractor API.
@@ -150,7 +204,7 @@ Note that indexing happens on every page save. You have to run {[Space: Reindex]
 ## Example
 Let’s say you want to use the syntax `✅ 2024-02-27` in a task to signify when that task was completed and strip it from the task name. Here’s an example:
 
-* [x] I’ve done this ✅ 2024-02-27
+* [x] I’ve done this ✅ 2024-08-07
 
 The following attribute extractor will accomplish this: 
 
@@ -182,16 +236,6 @@ Result:
 # Syscalls
 The primary way to interact with the SilverBullet environment is using “syscalls”. Syscalls expose SilverBullet functionality largely available both on the client and server in a safe way.
 
-In your space script, a syscall is invoked via `syscall(name, arg1, arg2)` and usually returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) with the result.
+In your space script, all syscalls are exposed via the global environment, and all return a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) with the result.
 
-Here are all available syscalls:
-
-```template
-{{#each @module in {syscall select replace(name, /\.\w+$/, "") as name}}}
-## {{@module.name}}
-{{#each {syscall where @module.name = replace(name, /\.\w+$/, "")}}}
-* `{{name}}`
-{{/each}}
-
-{{/each}}
-```
+[A full list of syscall are documented here](https://jsr.io/@silverbulletmd/silverbullet/doc/syscalls/~)

@@ -1,7 +1,10 @@
-import type { CompleteEvent } from "../../plug-api/types.ts";
-import { events } from "$sb/syscalls.ts";
+import type {
+  CompleteEvent,
+  ObjectValue,
+  QueryExpression,
+} from "../../plug-api/types.ts";
+import { events } from "@silverbulletmd/silverbullet/syscalls";
 import { queryObjects } from "./api.ts";
-import { ObjectValue, QueryExpression } from "../../plug-api/types.ts";
 import { determineTags } from "$lib/cheap_yaml.ts";
 
 export type AttributeObject = ObjectValue<{

@@ -1,6 +1,6 @@
-import { FileMeta } from "../../plug-api/types.ts";
-import { markdown, system } from "$sb/syscalls.ts";
-import { renderToText } from "$sb/lib/tree.ts";
+import type { FileMeta } from "../../plug-api/types.ts";
+import { markdown, system } from "@silverbulletmd/silverbullet/syscalls";
+import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { tagPrefix } from "./constants.ts";
 
 export async function readFileTag(
@@ -10,7 +10,7 @@ export async function readFileTag(
     tagPrefix.length,
     name.length - ".md".length,
   );
-  const text = `These are all objects in your space tagged with #${tagName}.
+  const text = `All objects in your space tagged with #${tagName}:
 \`\`\`template
 template: |
     {{#if .}}

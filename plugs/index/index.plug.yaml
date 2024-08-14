@@ -35,11 +35,10 @@ functions:
     env: server
 
   clearDSIndex:
-    path: api.ts:clearPageIndex
+    path: api.ts:clearFileIndex
     env: server
     events:
-      - page:saved
-      - page:deleted
+      - file:deleted
 
   parseIndexTextRepublish:
     path: "./command.ts:parseIndexTextRepublish"
@@ -52,6 +51,7 @@ functions:
     command:
       name: "Space: Reindex"
       requireMode: rw
+      
   processIndexQueue:
     path: ./command.ts:processIndexQueue
     mqSubscriptions:
@@ -61,6 +61,11 @@ functions:
   reindexSpace:
     path: "./command.ts:reindexSpace"
     env: server
+
+  indexAttachment:
+    path: "./attachment.ts:indexAttachment"
+    events:
+      - attachment:index
 
   indexPage:
     path: page.ts:indexPage
@@ -132,9 +137,15 @@ functions:
     events:
       - page:index
 
-    # Style
+  # Style
   indexSpaceStyle:
     path: style.ts:indexSpaceStyle
+    events:
+      - page:index
+
+  # Config
+  indexSpaceConfig:
+    path: config.ts:indexSpaceConfig
     events:
       - page:index
 

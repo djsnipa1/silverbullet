@@ -1,6 +1,8 @@
-import { SpacePrimitives } from "./space_primitives.ts";
-import { FileMeta } from "../../plug-api/types.ts";
+import type { SpacePrimitives } from "./space_primitives.ts";
+import type { FileMeta } from "../../plug-api/types.ts";
 import { flushCachesAndUnregisterServiceWorker } from "../sw_util.ts";
+
+const defaultFetchTimeout = 30000; // 30 seconds
 
 export class HttpSpacePrimitives implements SpacePrimitives {
   constructor(
@@ -13,6 +15,7 @@ export class HttpSpacePrimitives implements SpacePrimitives {
   public async authenticatedFetch(
     url: string,
     options: RequestInit,
+    fetchTimeout: number = defaultFetchTimeout,
   ): Promise<Response> {
     if (!options.headers) {
       options.headers = {};
@@ -29,19 +32,24 @@ export class HttpSpacePrimitives implements SpacePrimitives {
     }
 
     try {
+      options.signal = AbortSignal.timeout(fetchTimeout);
       const result = await fetch(url, options);
       if (result.status === 503) {
         throw new Error("Offline");
       }
       if (result.redirected) {
-        // Got a redirect, we'll assume this is due to invalid credentials and redirecting to an auth page
-        console.log(
-          "Got a redirect via the API so will redirect to URL",
-          result.url,
-        );
-        alert("You are not authenticated, redirecting to login page...");
-        location.href = result.url;
-        throw new Error("Not authenticated");
+        if (result.status === 401) {
+          console.log(
+            "Received unauthorized status and got a redirect via the API so will redirect to URL",
+            result.url,
+          );
+          alert("You are not authenticated, redirecting to login page...");
+          location.href = result.url;
+          throw new Error("Not authenticated");
+        } else {
+          location.href = result.url;
+          throw new Error("Redirected");
+        }
       }
       if (result.status === 401) {
         location.reload();
@@ -192,11 +200,11 @@ export class HttpSpacePrimitives implements SpacePrimitives {
   // Used to check if the server is reachable and the user is authenticated
   // If not: throws an error or invokes a redirect
   async ping() {
-    await this.authenticatedFetch(`${this.url}/index.json`, {
+    await this.authenticatedFetch(`${this.url}/.ping`, {
       method: "GET",
       headers: {
         Accept: "application/json",
       },
-    });
+    }, 5000);
   }
 }

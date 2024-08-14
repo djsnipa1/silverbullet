@@ -1,8 +1,10 @@
-import { ObjectValue } from "../../plug-api/types.ts";
-import { system } from "$sb/syscalls.ts";
+import { system } from "@silverbulletmd/silverbullet/syscalls";
 import { indexObjects } from "./api.ts";
-import { QueryProviderEvent } from "../../plug-api/types.ts";
-import { applyQuery } from "$sb/lib/query.ts";
+import type {
+  ObjectValue,
+  QueryProviderEvent,
+} from "@silverbulletmd/silverbullet/types";
+import { applyQuery } from "@silverbulletmd/silverbullet/lib/query";
 import { builtinFunctions } from "$lib/builtin_query_functions.ts";
 
 export const builtinPseudoPage = ":builtin:";
@@ -20,6 +22,15 @@ export const builtins: Record<string, Record<string, string>> = {
     contentType: "!string",
     size: "!number",
     tags: "string[]",
+  },
+  attachment: {
+    ref: "!string",
+    name: "!string",
+    created: "!date",
+    lastModified: "!date",
+    perm: "!rw|ro",
+    contentType: "!string",
+    size: "!number",
   },
   task: {
     ref: "!string",
@@ -103,7 +114,6 @@ export const builtins: Record<string, Record<string, string>> = {
     requiredPermissions: "!string[]",
     argCount: "!number",
   },
-
   command: {
     name: "!string",
     priority: "!number",
@@ -111,6 +121,17 @@ export const builtins: Record<string, Record<string, string>> = {
     mac: "!string",
     hide: "!boolean",
     requireMode: "!rw|ro",
+  },
+  "space-config": {
+    key: "!string",
+    value: "!any",
+  },
+  "space-style": {
+    style: "!string",
+    origin: "!string",
+  },
+  "space-script": {
+    script: "!string",
   },
 };
 

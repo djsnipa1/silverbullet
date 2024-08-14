@@ -1,11 +1,15 @@
-import { FeatherProps } from "preact-feather/types";
-import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-import { FunctionalComponent } from "preact";
+import type { FeatherProps } from "preact-feather/types";
+import type {
+  CompletionContext,
+  CompletionResult,
+} from "@codemirror/autocomplete";
+import type { FunctionalComponent } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { FilterOption } from "$lib/web.ts";
+import type { FilterOption } from "@silverbulletmd/silverbullet/type/client";
 import { MiniEditor } from "./mini_editor.tsx";
 import { fuzzySearchAndSort } from "../fuse_search.ts";
 import { deepEqual } from "../../plug-api/lib/json.ts";
+import { AlwaysShownModal } from "./basic_modals.tsx";
 
 export function FilterList({
   placeholder,
@@ -93,7 +97,11 @@ export function FilterList({
   }, []);
 
   const returnEl = (
-    <div className="sb-modal-box">
+    <AlwaysShownModal
+      onCancel={() => {
+        onSelect(undefined);
+      }}
+    >
       <div
         className="sb-header"
         onClick={(e) => {
@@ -143,7 +151,9 @@ export function FilterList({
                 setSelectionOption(Math.max(0, selectedOption - 5));
                 return true;
               case "PageDown":
-                setSelectionOption(Math.max(0, selectedOption + 5));
+                setSelectionOption(
+                  Math.min(matchingOptions.length - 1, selectedOption + 5),
+                );
                 return true;
               case "Home":
                 setSelectionOption(0);
@@ -153,7 +163,18 @@ export function FilterList({
                 return true;
               case " ": {
                 const text = view.state.sliceDoc();
-                if (completePrefix && text === "") {
+                if (e.shiftKey) {
+                  // Operate on the highlighted option, ignoring prompt
+                  const option = matchingOptions[selectedOption].name;
+                  // Get the folder it's nested in, keeping the trailing /
+                  const folderPath = option.slice(
+                    0,
+                    option.lastIndexOf("/") + 1,
+                  );
+                  // If the option wasn't in a folder, make it a folder
+                  setText(folderPath !== "" ? folderPath : option + "/");
+                  return true;
+                } else if (completePrefix && text === "") {
                   setText(completePrefix);
                   // updateFilter(completePrefix);
                   return true;
@@ -170,16 +191,19 @@ export function FilterList({
         dangerouslySetInnerHTML={{ __html: helpText }}
       >
       </div>
-      <div className="sb-result-list">
+      <div className="sb-result-list" tabIndex={-1}>
         {matchingOptions && matchingOptions.length > 0
           ? matchingOptions.map((option, idx) => (
             <div
               key={"" + idx}
               ref={selectedOption === idx ? selectedElementRef : undefined}
-              className={selectedOption === idx
-                ? "sb-selected-option"
-                : "sb-option"}
-              onMouseMove={(e) => {
+              className={(selectedOption === idx
+                ? "sb-option sb-selected-option"
+                : "sb-option") +
+                (option.cssClass
+                  ? " sb-decorated-object " + option.cssClass
+                  : "")}
+              onMouseMove={() => {
                 if (selectedOption !== idx) {
                   setSelectionOption(idx);
                 }
@@ -203,7 +227,7 @@ export function FilterList({
           ))
           : null}
       </div>
-    </div>
+    </AlwaysShownModal>
   );
 
   useEffect(() => {

@@ -1,13 +1,15 @@
 import { commandLinkRegex } from "../command.ts";
 import { yaml as yamlLanguage } from "@codemirror/legacy-modes/mode/yaml?external=@codemirror/language&target=es2022";
-import { styleTags, Tag, tags as t } from "@lezer/highlight";
+import { styleTags, type Tag, tags as t } from "@lezer/highlight";
 import {
-  BlockContext,
-  LeafBlock,
-  LeafBlockParser,
-  Line,
-  MarkdownConfig,
+  type BlockContext,
+  type LeafBlock,
+  type LeafBlockParser,
+  type Line,
+  type MarkdownConfig,
   Strikethrough,
+  Subscript,
+  Superscript,
 } from "@lezer/markdown";
 import { markdown } from "@codemirror/lang-markdown";
 import { StreamLanguage } from "@codemirror/language";
@@ -15,16 +17,12 @@ import * as ct from "./customtags.ts";
 import { NakedURLTag } from "./customtags.ts";
 import { TaskList } from "./extended_task.ts";
 
-export const pageLinkRegex = /^\[\[([^\]\|]+)(\|([^\]]+))?\]\]/;
-
-export const tagRegex =
-  /#[^\d\s!@#$%^&*(),.?":{}|<>\\][^\s!@#$%^&*(),.?":{}|<>\\]*/;
-
 const WikiLink: MarkdownConfig = {
   defineNodes: [
     { name: "WikiLink", style: ct.WikiLinkTag },
     { name: "WikiLinkPage", style: ct.WikiLinkPageTag },
     { name: "WikiLinkAlias", style: ct.WikiLinkPageTag },
+    { name: "WikiLinkDimensions", style: ct.WikiLinkPageTag },
     { name: "WikiLinkMark", style: t.processingInstruction },
   ],
   parseInline: [
@@ -33,33 +31,45 @@ const WikiLink: MarkdownConfig = {
       parse(cx, next, pos) {
         let match: RegExpMatchArray | null;
         if (
-          next != 91 /* '[' */ ||
-          !(match = pageLinkRegex.exec(cx.slice(pos, cx.end)))
+          next != 91 /* '[' */ &&
+            next != 33 /* '!' */ ||
+          !(match = pWikiLinkRegex.exec(cx.slice(pos, cx.end)))
         ) {
           return -1;
         }
-        const [fullMatch, page, pipePart, label] = match;
+
+        const [fullMatch, firstMark, page, alias, _lastMark] = match;
         const endPos = pos + fullMatch.length;
         let aliasElts: any[] = [];
-        if (pipePart) {
-          const pipeStartPos = pos + 2 + page.length;
+        if (alias) {
+          const pipeStartPos = pos + firstMark.length + page.length;
           aliasElts = [
             cx.elt("WikiLinkMark", pipeStartPos, pipeStartPos + 1),
             cx.elt(
               "WikiLinkAlias",
               pipeStartPos + 1,
-              pipeStartPos + 1 + label.length,
+              pipeStartPos + 1 + alias.length,
             ),
           ];
         }
-        return cx.addElement(
-          cx.elt("WikiLink", pos, endPos, [
-            cx.elt("WikiLinkMark", pos, pos + 2),
-            cx.elt("WikiLinkPage", pos + 2, pos + 2 + page.length),
-            ...aliasElts,
-            cx.elt("WikiLinkMark", endPos - 2, endPos),
-          ]),
-        );
+
+        let allElts = cx.elt("WikiLink", pos, endPos, [
+          cx.elt("WikiLinkMark", pos, pos + firstMark.length),
+          cx.elt(
+            "WikiLinkPage",
+            pos + firstMark.length,
+            pos + firstMark.length + page.length,
+          ),
+          ...aliasElts,
+          cx.elt("WikiLinkMark", endPos - 2, endPos),
+        ]);
+
+        // If inline image
+        if (next == 33) {
+          allElts = cx.elt("Image", pos, endPos, [allElts]);
+        }
+
+        return cx.addElement(allElts);
       },
       after: "Emphasis",
     },
@@ -530,6 +540,7 @@ const NamedAnchor = regexParser({
 
 import { Table } from "./table_parser.ts";
 import { foldNodeProp } from "@codemirror/language";
+import { pWikiLinkRegex, tagRegex } from "$common/markdown_parser/constants.ts";
 
 // FrontMatter parser
 
@@ -610,6 +621,8 @@ export const extendedMarkdownLanguage = markdown({
     Hashtag,
     TaskDeadline,
     NamedAnchor,
+    Superscript,
+    Subscript,
     {
       props: [
         foldNodeProp.add({
@@ -632,8 +645,9 @@ export const extendedMarkdownLanguage = markdown({
           Task: ct.TaskTag,
           TaskMark: ct.TaskMarkTag,
           Comment: ct.CommentTag,
-          "TableDelimiter SubscriptMark SuperscriptMark StrikethroughMark":
-            t.processingInstruction,
+          "Subscript": ct.SubscriptTag,
+          "Superscript": ct.SuperscriptTag,
+          "TableDelimiter StrikethroughMark": t.processingInstruction,
           "TableHeader/...": t.heading,
           TableCell: t.content,
           CodeInfo: ct.CodeInfoTag,

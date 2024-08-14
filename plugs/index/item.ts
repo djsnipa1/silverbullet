@@ -2,20 +2,21 @@ import type { IndexTreeEvent } from "../../plug-api/types.ts";
 
 import {
   collectNodesOfType,
-  ParseTree,
+  type ParseTree,
   renderToText,
 } from "../../plug-api/lib/tree.ts";
-import { extractAttributes } from "$sb/lib/attribute.ts";
-import { rewritePageRefs } from "$sb/lib/resolve.ts";
-import { ObjectValue } from "../../plug-api/types.ts";
+import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
+import { rewritePageRefs } from "@silverbulletmd/silverbullet/lib/resolve";
+import type { ObjectValue } from "../../plug-api/types.ts";
 import { indexObjects } from "./api.ts";
-import { updateITags } from "$sb/lib/tags.ts";
-import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
+import { updateITags } from "@silverbulletmd/silverbullet/lib/tags";
+import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 
 export type ItemObject = ObjectValue<
   {
-    name: string;
     page: string;
+    name: string;
+    text: string;
     pos: number;
   } & Record<string, any>
 >;
@@ -27,7 +28,7 @@ export async function indexItems({ name, tree }: IndexTreeEvent) {
 
   const coll = collectNodesOfType(tree, "ListItem");
 
-  for (let n of coll) {
+  for (const n of coll) {
     if (!n.children) {
       continue;
     }
@@ -40,12 +41,15 @@ export async function indexItems({ name, tree }: IndexTreeEvent) {
     const item: ItemObject = {
       ref: `${name}@${n.from}`,
       tag: "item",
-      name: "", // to be replaced
+      name: "",
+      text: "",
       page: name,
       pos: n.from!,
     };
 
     const textNodes: ParseTree[] = [];
+
+    const fullText = renderToText(n);
 
     collectNodesOfType(n, "Hashtag").forEach((h) => {
       // Push tag to the list, removing the initial #
@@ -69,6 +73,8 @@ export async function indexItems({ name, tree }: IndexTreeEvent) {
     }
 
     item.name = textNodes.map(renderToText).join("").trim();
+    item.text = fullText;
+
     if (tags.size > 0) {
       item.tags = [...tags];
     }

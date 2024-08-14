@@ -1,14 +1,19 @@
-This library contains some useful page templates for journalers. Want to easily create a daily or weekly note? These templates can get you started. Instantiate them via {[Page: From Template]}. 
+This [[Libraries|library]] contains some useful page templates for journalers. Want to easily create a daily or weekly note? These templates can get you started. Instantiate them via {[Page: From Template]}. 
 
 # Installation
-To import this library, run the {[Library: Import]} command in your SilverBullet space and enter:
+In your [[SETTINGS]] list the following under `libraries:`
+```yaml
+libraries:
+- import: "[[!silverbullet.md/Library/Journal/*]]"
+```
+Then run the {[Libraries: Update]} command to install it.
 
-    !silverbullet.md/Library/Journal/
+See [[Libraries#Configuring libraries]] for more details.
 
 # Included templates
 ```query
 page
-where name =~ /^{{escapeRegexp @page.name}}\//
+where name =~ /^{{escapeRegexp(@page.name)}}\//
 render [[Library/Core/Query/Page]]
 ```
 

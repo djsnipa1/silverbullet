@@ -1,8 +1,8 @@
-import { parseQuery } from "$sb/lib/parse-query.ts";
-import { Query } from "../../plug-api/types.ts";
-import { events } from "$sb/syscalls.ts";
-import { QueryProviderEvent } from "../../plug-api/types.ts";
-import { resolvePath } from "$sb/lib/resolve.ts";
+import { parseQuery } from "../../plug-api/lib/parse_query.ts";
+import type { Query } from "../../plug-api/types.ts";
+import { events } from "@silverbulletmd/silverbullet/syscalls";
+import type { QueryProviderEvent } from "../../plug-api/types.ts";
+import { resolvePath } from "@silverbulletmd/silverbullet/lib/resolve";
 import { renderQueryTemplate } from "../template/util.ts";
 
 export async function query(
@@ -32,7 +32,7 @@ export async function renderQuery(
     // Configured a custom rendering template, let's use it!
     const templatePage = resolvePath(
       variables?.page?.name,
-      parsedQuery.render,
+      "/" + parsedQuery.render,
     );
     const rendered = await renderQueryTemplate(
       variables?.page,

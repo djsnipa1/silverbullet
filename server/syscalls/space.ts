@@ -1,5 +1,9 @@
-import { AttachmentMeta, FileMeta, PageMeta } from "../../plug-api/types.ts";
-import { SysCallMapping } from "../../lib/plugos/system.ts";
+import type {
+  AttachmentMeta,
+  FileMeta,
+  PageMeta,
+} from "../../plug-api/types.ts";
+import type { SysCallMapping } from "../../lib/plugos/system.ts";
 import type { Space } from "../../common/space.ts";
 
 /**

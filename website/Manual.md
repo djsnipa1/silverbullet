@@ -9,7 +9,6 @@ However, that is all unlikely to happen unless you understand what SilverBullet 
 The biggest hurdle to get over with SilverBullet is that you need to get this thing running. And as of yet, the only way to do that is to install and deploy it yourself. 🤷
 
 * [[Install]]: Installation instructions for various setups
-* [[Deployments]]: various deployment options
 * [[Authelia]]: configuring SilverBullet with [Authelia](https://www.authelia.com/) authentication.
 
 For more additional guides, check out [our community guides](https://community.silverbullet.md/c/guides/6).
@@ -28,7 +27,7 @@ SilverBullet’s UI is minimalist by design. Let’s look at the few UI elements
 # Core Concepts
 These are the core concepts used in SilverBullet:
 * [[Spaces]]
-* [[Pages]]
+* [[Pages]] (and [[Meta Pages]])
   * [[Frontmatter]]
   * [[Page Name Rules]]
 * [[Folders]]
@@ -50,7 +49,7 @@ These are the core concepts used in SilverBullet:
 # Navigation
 The main ways to roam your space, beside following page links, are:
 * [[Page Picker]]
-* [[Template Picker]]
+* [[Meta Picker]]
 * [[Full Text Search]]
 
 # Advanced topics
@@ -59,13 +58,18 @@ The main ways to roam your space, beside following page links, are:
   * [[Attributes]]
 * [[Live Queries]]
 * [[Templates]]
-* [[Federation]]: it is possible to “sync in” content from outside sources, such as [[Libraries]]
+* [[Libraries]]
+* [[Federation]]
+* [[Space Script]] & [[Space Style]]
+
+# Customization
+* [[SETTINGS]]
+* [[Shortcuts]]
+* [[Page Decorations]]
+* [[Space Style]]
 
 # Extending SilverBullet
-A lot of SilverBullet’s functionality is built as [[Plugs]] using the robust [[PlugOS]] extension mechanism. If you are adventurous you can try to build [[Plugs/Development|such plugs yourself]].
+A lot of SilverBullet’s functionality is built as [[Plugs]] using the robust [[PlugOS]] extension mechanism. If you are adventurous you can try to build [[Plugs/Development|such plugs yourself]]. A lighter, but also powerful way to extend SilverBullet is through [[Space Script]].
 
 # Contributing
 SilverBullet is free and open-source software. You can contribute to it [via Github](https://github.com/silverbulletmd/silverbullet). For some details on how to do this, have a look at [[Development]].
-
-# Personalization
-Want to tweak something? [[SETTINGS]] gives you a few settings you can tweak.

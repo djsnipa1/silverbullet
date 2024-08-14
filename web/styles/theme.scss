@@ -1,5 +1,7 @@
 html {
   --ui-accent-color: #464cfc;
+  --ui-accent-text-color: var(--ui-accent-color);
+  --ui-accent-contrast-color: #eee;
   --highlight-color: rgba(255, 255, 0, 0.5);
   --link-color: #0330cb;
   --link-missing-color: #9e4705;
@@ -29,11 +31,11 @@ html {
   --modal-color: inherit;
   --modal-background-color: #fff;
   --modal-border-color: rgb(108, 108, 108);
-  --modal-header-label-color: var(--ui-accent-color);
+  --modal-header-label-color: var(--ui-accent-text-color);
   --modal-help-background-color: #eee;
   --modal-help-color: #555;
   --modal-selected-option-background-color: var(--ui-accent-color);
-  --modal-selected-option-color: #eee;
+  --modal-selected-option-color: var(--ui-accent-contrast-color);
   --modal-hint-background-color: #212476;
   --modal-hint-color: #eee;
   --modal-description-color: #aaa;
@@ -42,6 +44,17 @@ html {
   --notifications-border-color: rgb(41, 41, 41);
   --notification-info-background-color: rgb(187, 221, 247);
   --notification-error-background-color: rgb(255, 84, 84);
+
+  --button-background-color: #eee;
+  --button-hover-background-color: inherit;
+  --button-color: black;
+  --button-border-color: #6c6c6c;
+  --primary-button-background-color: var(--ui-accent-color);
+  --primary-button-hover-background-color: color-mix(in srgb, var(--ui-accent-color), black 35%);
+  --primary-button-color: var(--ui-accent-contrast-color);
+  --primary-button-border-color: transparent;
+
+  --text-field-background-color: var(--button-background-color);
 
   --action-button-background-color: transparent;
   --action-button-color: #292929;
@@ -115,8 +128,16 @@ html {
   --editor-width: 800px;
 }
 
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
 html[data-theme="dark"] {
+  color-scheme: dark;
+
   --ui-accent-color: #464cfc;
+  --ui-accent-text-color: var(--ui-accent-color);
+  --ui-accent-text-color: color-mix(in srgb, var(--ui-accent-color), white 50%);
   --highlight-color: rgba(255, 255, 0, 0.5);
   --link-color: #7e99fc;
   --link-missing-color: #9e4705;
@@ -137,16 +158,16 @@ html[data-theme="dark"] {
   --top-unsaved-color: #c7c7c7;
   --top-loading-color: #c7c7c7;
 
-  --panel-background-color: #fff;
-  --panel-border-color: #fff;
+  --panel-background-color: #111;
+  --panel-border-color: rgb(62, 62, 62);
 
-  --bhs-background-color: #fff;
-  --bhs-border-color: rgb(193, 193, 193);
+  --bhs-background-color: #111;
+  --bhs-border-color: rgb(62, 62, 62);
 
   --modal-color: #ccc;
   --modal-background-color: #262626;
   --modal-border-color: #6c6c6c;
-  --modal-header-label-color: var(--ui-accent-color);
+  --modal-header-label-color: var(--ui-accent-text-color);
   --modal-help-background-color: #333;
   --modal-help-color: #ccc;
   --modal-selected-option-background-color: var(--ui-accent-color);
@@ -160,6 +181,17 @@ html[data-theme="dark"] {
   --notification-info-background-color: #1b76bb;
   --notification-error-background-color: #a32121;
 
+  --button-background-color: #555;
+  --button-hover-background-color: #777;
+  --button-color: white;
+  --button-border-color: #666;
+  --primary-button-background-color: var(--ui-accent-color);
+  --primary-button-hover-background-color: color-mix(in srgb, var(--ui-accent-color), black 35%);
+  --primary-button-color: var(--ui-accent-contrast-color);
+  --primary-button-border-color: transparent;
+
+  --text-field-background-color: var(--button-background-color);
+
   --action-button-background-color: transparent;
   --action-button-color: #adadad;
   --action-button-hover-color: #37a1ed;
@@ -170,7 +202,7 @@ html[data-theme="dark"] {
   --editor-panels-bottom-color: #fff;
   --editor-panels-bottom-background-color: #262626;
   --editor-panels-bottom-border-color: rgb(62, 62, 62);
-  --editor-completion-detail-color: #555;
+  --editor-completion-detail-color: #aaa;
   --editor-completion-detail-selected-color: #d2d2d2;
   --editor-list-bullet-color: rgb(150, 150, 150);
   --editor-heading-color: #d1d1d1;
@@ -224,11 +256,19 @@ html[data-theme="dark"] {
 }
 
 .sb-admonition[admonition="note"] {
+  .sb-admonition-type * {
+    display: none;
+  }
+
   --admonition-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>');
   --admonition-color: #00b8d4;
 }
 
 .sb-admonition[admonition="warning"] {
+  .sb-admonition-type * {
+    display: none;
+  }
+
   --admonition-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>');
   --admonition-color: #ff9100;
 }

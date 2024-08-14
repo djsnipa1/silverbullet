@@ -2,13 +2,18 @@ import {
   addParentPointers,
   collectNodesOfType,
   findNodeOfType,
-  ParseTree,
+  type ParseTree,
   removeParentPointers,
   renderToText,
   traverseTree,
-} from "../../plug-api/lib/tree.ts";
-import { encodePageRef, parsePageRef } from "$sb/lib/page_ref.ts";
-import { Fragment, renderHtml, Tag } from "./html_render.ts";
+} from "@silverbulletmd/silverbullet/lib/tree";
+import {
+  encodePageRef,
+  parsePageRef,
+} from "@silverbulletmd/silverbullet/lib/page_ref";
+import { Fragment, renderHtml, type Tag } from "./html_render.ts";
+import { isLocalPath } from "@silverbulletmd/silverbullet/lib/resolve";
+import type { PageMeta } from "@silverbulletmd/silverbullet/types";
 
 export type MarkdownRenderOptions = {
   failOnUnknown?: true;
@@ -33,7 +38,7 @@ function cleanTags(values: (Tag | null)[], cleanWhitespace = false): Tag[] {
   return result;
 }
 
-function preprocess(t: ParseTree, options: MarkdownRenderOptions = {}) {
+function preprocess(t: ParseTree) {
   addParentPointers(t);
   traverseTree(t, (node) => {
     if (!node.type) {
@@ -115,6 +120,11 @@ function render(
     case "ATXHeading5":
       return {
         name: "h5",
+        body: cleanTags(mapRender(t.children!)),
+      };
+    case "ATXHeading6":
+      return {
+        name: "h6",
         body: cleanTags(mapRender(t.children!)),
       };
     case "Paragraph":
@@ -209,7 +219,7 @@ function render(
         return renderToText(t);
       }
       let url = urlNode.children![0].text!;
-      if (url.indexOf("://") === -1) {
+      if (isLocalPath(url)) {
         if (
           options.attachmentUrlPrefix &&
           !url.startsWith(options.attachmentUrlPrefix)
@@ -225,14 +235,13 @@ function render(
         body: cleanTags(mapRender(linkTextChildren)),
       };
     }
-    case "Image": {
-      const altText = t.children![1].text!;
+    case "Autolink": {
       const urlNode = findNodeOfType(t, "URL");
       if (!urlNode) {
         return renderToText(t);
       }
-      let url = urlNode!.children![0].text!;
-      if (url.indexOf("://") === -1) {
+      let url = urlNode.children![0].text!;
+      if (isLocalPath(url)) {
         if (
           options.attachmentUrlPrefix &&
           !url.startsWith(options.attachmentUrlPrefix)
@@ -241,10 +250,57 @@ function render(
         }
       }
       return {
+        name: "a",
+        attrs: {
+          href: url,
+        },
+        body: url,
+      };
+    }
+    case "Image": {
+      const altTextNode = findNodeOfType(t, "WikiLinkAlias") ||
+        t.children![1];
+      let altText = altTextNode && altTextNode.type !== "LinkMark"
+        ? renderToText(altTextNode)
+        : "";
+      const dimReg = /\d*[^\|\s]*?[xX]\d*[^\|\s]*/.exec(altText);
+      let style = "";
+      if (dimReg) {
+        const [, width, widthUnit = "px", height, heightUnit = "px"] =
+          dimReg[0].match(/(\d*)(\S*?x?)??[xX](\d*)(.*)?/) ?? [];
+        if (width) {
+          style += `width: ${width}${widthUnit};`;
+        }
+        if (height) {
+          style += `height: ${height}${heightUnit};`;
+        }
+        altText = altText.replace(dimReg[0], "").replace("|", "");
+      }
+
+      const urlNode = findNodeOfType(t, "WikiLinkPage") ||
+        findNodeOfType(t, "URL");
+      if (!urlNode) {
+        return renderToText(t);
+      }
+      let url = renderToText(urlNode);
+      if (urlNode.type === "WikiLinkPage") {
+        url = "/" + url;
+      }
+
+      if (
+        isLocalPath(url) &&
+        options.attachmentUrlPrefix &&
+        !url.startsWith(options.attachmentUrlPrefix)
+      ) {
+        url = `${options.attachmentUrlPrefix}${url}`;
+      }
+
+      return {
         name: "img",
         attrs: {
           src: url,
           alt: altText,
+          style: style,
         },
         body: "",
       };
@@ -384,7 +440,7 @@ function render(
         body: [
           {
             name: "tr",
-            body: cleanTags(mapRender(t.children!)),
+            body: cleanTags(mapRender(t.children!), true),
           },
         ],
       };
@@ -417,7 +473,7 @@ function render(
       }
       return {
         name: "tr",
-        body: cleanTags(mapRender(newChildren)),
+        body: cleanTags(mapRender(newChildren), true),
       };
     }
     case "Attribute":
@@ -452,6 +508,16 @@ function render(
         body: renderToText(t),
       };
     }
+    case "Superscript":
+      return {
+        name: "sup",
+        body: cleanTags(mapRender(t.children!)),
+      };
+    case "Subscript":
+      return {
+        name: "sub",
+        body: cleanTags(mapRender(t.children!)),
+      };
 
     // Text
     case undefined:
@@ -492,20 +558,40 @@ function traverseTag(
 export function renderMarkdownToHtml(
   t: ParseTree,
   options: MarkdownRenderOptions = {},
+  allPages: PageMeta[] = [],
 ) {
-  preprocess(t, options);
+  preprocess(t);
   const htmlTree = posPreservingRender(t, options);
-  if (htmlTree && options.translateUrls) {
+  if (htmlTree) {
     traverseTag(htmlTree, (t) => {
       if (typeof t === "string") {
         return;
       }
-      if (t.name === "img") {
+      if (t.name === "img" && options.translateUrls) {
         t.attrs!.src = options.translateUrls!(t.attrs!.src!, "image");
       }
 
       if (t.name === "a" && t.attrs!.href) {
-        t.attrs!.href = options.translateUrls!(t.attrs!.href, "link");
+        if (options.translateUrls) {
+          t.attrs!.href = options.translateUrls!(t.attrs!.href, "link");
+        }
+        if (t.attrs!["data-ref"]?.length) {
+          const pageRef = parsePageRef(t.attrs!["data-ref"]!);
+          const pageMeta = allPages.find((p) => pageRef.page === p.name);
+          if (pageMeta) {
+            t.body = [(pageMeta.pageDecoration?.prefix ?? "") + t.body];
+            if (pageMeta.pageDecoration?.cssClasses) {
+              t.attrs!.class += " sb-decorated-object " +
+                pageMeta.pageDecoration.cssClasses.join(" ").replaceAll(
+                  /[^a-zA-Z0-9-_ ]/g,
+                  "",
+                );
+            }
+          }
+        }
+        if (t.body.length === 0) {
+          t.body = [t.attrs!.href];
+        }
       }
     });
   }

@@ -16,19 +16,32 @@ export type PageMeta = ObjectValue<
     name: string;
     created: string; // indexing it as a string
     lastModified: string; // indexing it as a string
-    lastOpened?: number;
     perm: "ro" | "rw";
+    lastOpened?: number;
+    pageDecoration?: PageDecoration;
   } & Record<string, any>
 >;
 
-export type AttachmentMeta = {
-  name: string;
-  contentType: string;
-  created: number;
-  lastModified: number;
-  size: number;
-  perm: "ro" | "rw";
+/**
+ * Decorates a page when it matches certain criteria
+ */
+export type PageDecoration = {
+  prefix?: string;
+  cssClasses?: string[];
+  hide?: boolean;
+  renderWidgets?: boolean; // Defaults to true
 };
+
+export type AttachmentMeta = ObjectValue<
+  {
+    name: string;
+    contentType: string;
+    created: string;
+    lastModified: string;
+    size: number;
+    perm: "ro" | "rw";
+  } & Record<string, any>
+>;
 
 export type SyscallMeta = {
   name: string;
@@ -160,7 +173,7 @@ export type CodeWidgetButton = {
   widgetTarget?: boolean;
   description: string;
   svg: string;
-  invokeFunction: string;
+  invokeFunction: string[];
 };
 
 export type LintDiagnostic = {
@@ -260,4 +273,20 @@ export type WidgetContent = {
  */
 export type PageModifiedEvent = {
   changes: TextChange[];
+};
+
+// HTTP Endpoint related types
+export type EndpointRequest = {
+  method: string;
+  fullPath: string;
+  path: string;
+  query: { [key: string]: string };
+  headers: { [key: string]: string };
+  body: any;
+};
+
+export type EndpointResponse = {
+  status?: number;
+  headers?: { [key: string]: string };
+  body: any;
 };

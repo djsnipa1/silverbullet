@@ -3,9 +3,9 @@ import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import {
   autocompletion,
   closeBracketsKeymap,
-  CompletionContext,
+  type CompletionContext,
   completionKeymap,
-  CompletionResult,
+  type CompletionResult,
 } from "@codemirror/autocomplete";
 import { EditorState } from "@codemirror/state";
 import {
@@ -14,7 +14,7 @@ import {
   keymap,
   placeholder,
   ViewPlugin,
-  ViewUpdate,
+  type ViewUpdate,
 } from "@codemirror/view";
 import { getCM as vimGetCm, Vim, vim } from "@replit/codemirror-vim";
 import { createCommandKeyBindings } from "../editor_state.ts";
@@ -64,19 +64,24 @@ export function MiniEditor(
   const callbacksRef = useRef<MiniEditorEvents>();
 
   useEffect(() => {
-    if (editorDiv.current) {
+    const currentEditorDiv = editorDiv.current;
+    if (currentEditorDiv) {
       // console.log("Creating editor view");
       const editorView = new EditorView({
         state: buildEditorState(),
-        parent: editorDiv.current!,
+        parent: currentEditorDiv,
       });
       editorViewRef.current = editorView;
+
+      const focusEditorView = editorView.focus.bind(editorView);
+      currentEditorDiv.addEventListener("focusin", focusEditorView);
 
       if (focus) {
         editorView.focus();
       }
 
       return () => {
+        currentEditorDiv.removeEventListener("focusin", focusEditorView);
         if (editorViewRef.current) {
           editorViewRef.current.destroy();
         }
@@ -107,37 +112,27 @@ export function MiniEditor(
     }
   }, [text, vimMode]);
 
-  useEffect(() => {
-    // So, for some reason, CM doesn't propagate the keydown event, therefore we'll capture it here
-    // And check if it's the same editor element
-    function onKeyDown(e: KeyboardEvent) {
-      const parent = (e.target as any).parentElement.parentElement;
-      if (parent !== editorViewRef.current?.dom) {
-        // Different editor element
-        return;
-      }
-      let stopPropagation = false;
-      if (callbacksRef.current!.onKeyDown) {
-        stopPropagation = callbacksRef.current!.onKeyDown(
-          editorViewRef.current!,
-          e,
-        );
-      }
-      if (stopPropagation) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
-
   let onBlurred = false, onEntered = false;
 
-  return <div class="sb-mini-editor" ref={editorDiv} />;
+  return (
+    <div
+      class="sb-mini-editor"
+      onKeyDown={(e) => {
+        let stopPropagation = false;
+        if (callbacksRef.current!.onKeyDown) {
+          stopPropagation = callbacksRef.current!.onKeyDown(
+            editorViewRef.current!,
+            e,
+          );
+        }
+        if (stopPropagation) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+      ref={editorDiv}
+    />
+  );
 
   function buildEditorState() {
     // When vim mode is active, we need for CM to have created the new state
@@ -195,7 +190,7 @@ export function MiniEditor(
           ...standardKeymap,
           ...historyKeymap,
           ...completionKeymap,
-          ...createCommandKeyBindings(window.client),
+          ...createCommandKeyBindings(globalThis.client),
         ]),
         EditorView.domEventHandlers({
           click: (e) => {
@@ -258,16 +253,10 @@ export function MiniEditor(
       onBlurred = true;
       if (callbacksRef.current!.onBlur) {
         Promise.resolve(callbacksRef.current!.onBlur(view.state.sliceDoc()))
-          .catch((e) => {
+          .catch(() => {
             // Reset the state
             view.setState(buildEditorState());
           });
-      } else if (focus) {
-        // console.log("BLURRING WHILE KEEPING FOCUSE");
-        // Automatically refocus blurred
-        if (editorViewRef.current) {
-          editorViewRef.current.focus();
-        }
       }
       // Event may occur again in 500ms
       setTimeout(() => {

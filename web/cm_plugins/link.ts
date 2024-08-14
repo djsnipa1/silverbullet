@@ -1,5 +1,8 @@
-import { resolveAttachmentPath } from "$sb/lib/resolve.ts";
-import { Client } from "../client.ts";
+import {
+  isLocalPath,
+  resolvePath,
+} from "@silverbulletmd/silverbullet/lib/resolve";
+import type { Client } from "../client.ts";
 import { syntaxTree } from "@codemirror/language";
 import { Decoration } from "@codemirror/view";
 import {
@@ -36,8 +39,8 @@ export function linkPlugin(client: Client) {
         const cleanAnchor = anchorPart.substring(1); // cut off the initial [
         let cleanLink = linkPart.substring(0, linkPart.length - 1); // cut off the final )
 
-        if (!cleanLink.includes("://")) {
-          cleanLink = resolveAttachmentPath(
+        if (isLocalPath(cleanLink)) {
+          cleanLink = resolvePath(
             client.currentPage,
             decodeURI(cleanLink),
           );

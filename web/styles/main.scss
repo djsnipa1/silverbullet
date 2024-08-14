@@ -70,7 +70,7 @@ body {
       flex-direction: row;
 
       .wrapper {
-        width: 100%;
+        width: env(titlebar-area-width, 100%);
         padding: 0 20px;
         display: flex;
         box-sizing: border-box;
@@ -102,6 +102,8 @@ body {
       white-space: nowrap;
       text-align: left;
       display: block;
+
+      -webkit-app-region: drag;
 
       .cm-scroller {
         font-family: var(--ui-font);
@@ -176,14 +178,6 @@ body {
 
   .sb-panel {
     flex: 1;
-
-    iframe {
-      border: 0;
-      width: 100%;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-    }
   }
 }
 
@@ -201,14 +195,6 @@ body {
 
   .sb-panel {
     height: 100%;
-
-    iframe {
-      border: 0;
-      width: 100%;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-    }
   }
 }
 
@@ -218,13 +204,26 @@ body {
 
   .sb-panel {
     height: 100%;
+  }
+}
 
-    iframe {
-      border: 0;
-      width: 100%;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-    }
+.sb-page-prefix {
+  display: flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-top: 3px;
+  font-family: var(--ui-font);
+  white-space: pre-wrap;
+}
+
+.sb-panel {
+  iframe {
+    background-color: var(--root-background-color);
+    border: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
   }
 }

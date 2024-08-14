@@ -1,27 +1,28 @@
-import { editor, space } from "$sb/syscalls.ts";
-import { UploadFile } from "../../plug-api/types.ts";
+import { editor, space, system } from "@silverbulletmd/silverbullet/syscalls";
+import type { UploadFile } from "@silverbulletmd/silverbullet/types";
+import {
+  defaultLinkStyle,
+  maximumAttachmentSize,
+} from "../../web/constants.ts";
+import { resolvePath } from "@silverbulletmd/silverbullet/lib/resolve";
 
-const maximumAttachmentSize = 1024 * 1024 * 10; // 10MB
-
-function folderName(path: string) {
-  return path.split("/").slice(0, -1).join("/");
-}
-
-async function saveFile(file: UploadFile) {
-  if (file.content.length > maximumAttachmentSize) {
+export async function saveFile(file: UploadFile) {
+  const maxSize = await system.getSpaceConfig(
+    "maximumAttachmentSize",
+    maximumAttachmentSize,
+  );
+  if (typeof maxSize !== "number") {
+    await editor.flashNotification(
+      "The setting 'maximumAttachmentSize' must be a number",
+      "error",
+    );
+  }
+  if (file.content.length > maxSize * 1024 * 1024) {
     editor.flashNotification(
-      `Attachment is too large, maximum is ${
-        maximumAttachmentSize / 1024 / 1024
-      }MB`,
+      `Attachment is too large, maximum is ${maxSize}MiB`,
       "error",
     );
     return;
-  }
-
-  let prefix = folderName(await editor.getCurrentPage()) + "/";
-  if (prefix === "/") {
-    // root folder case
-    prefix = "";
   }
 
   const finalFileName = await editor.prompt(
@@ -31,13 +32,24 @@ async function saveFile(file: UploadFile) {
   if (!finalFileName) {
     return;
   }
-  await space.writeAttachment(
-    prefix + finalFileName,
-    file.content,
+  const attachmentPath = resolvePath(
+    await editor.getCurrentPage(),
+    finalFileName,
   );
-  let attachmentMarkdown = `[${finalFileName}](${encodeURI(finalFileName)})`;
-  if (file.contentType?.startsWith("image/")) {
-    attachmentMarkdown = `![](${encodeURI(finalFileName)})`;
+  await space.writeAttachment(attachmentPath, file.content);
+
+  const linkStyle = await system.getSpaceConfig(
+    "defaultLinkStyle",
+    defaultLinkStyle,
+  );
+  let attachmentMarkdown = "";
+  if (linkStyle === "wikilink") {
+    attachmentMarkdown = `[[${attachmentPath}]]`;
+  } else {
+    attachmentMarkdown = `[${finalFileName}](${encodeURI(finalFileName)})`;
+  }
+  if (file.contentType.startsWith("image/")) {
+    attachmentMarkdown = "!" + attachmentMarkdown;
   }
   editor.insertAtCursor(attachmentMarkdown);
 }

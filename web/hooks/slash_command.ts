@@ -1,18 +1,19 @@
-import { Hook, Manifest } from "$lib/plugos/types.ts";
-import { System } from "$lib/plugos/system.ts";
-import {
+import type { Hook, Manifest } from "$lib/plugos/types.ts";
+import type { System } from "$lib/plugos/system.ts";
+import type {
   Completion,
   CompletionContext,
   CompletionResult,
 } from "@codemirror/autocomplete";
-import { Client } from "../client.ts";
+import type { Client } from "../client.ts";
 import { syntaxTree } from "@codemirror/language";
-import {
+import type {
   SlashCompletionOption,
   SlashCompletions,
 } from "../../plug-api/types.ts";
 import { safeRun } from "$lib/async.ts";
-import { SlashCommandDef, SlashCommandHookT } from "$lib/manifest.ts";
+import type { SlashCommandDef, SlashCommandHookT } from "$lib/manifest.ts";
+import { parseCommand } from "$common/command.ts";
 
 export type AppSlashCommand = {
   slashCommand: SlashCommandDef;
@@ -49,6 +50,26 @@ export class SlashCommandHook implements Hook<SlashCommandHookT> {
         });
       }
     }
+    if (this.editor.config?.shortcuts) {
+      // Add slash commands for shortcuts that configure them
+      for (const shortcut of this.editor.config.shortcuts) {
+        if (shortcut.slashCommand) {
+          const parsedCommand = parseCommand(shortcut.command);
+          this.slashCommands.set(shortcut.slashCommand, {
+            slashCommand: {
+              name: shortcut.slashCommand,
+              description: parsedCommand.alias || parsedCommand.name,
+            },
+            run: () => {
+              return this.editor.runCommandByName(
+                parsedCommand.name,
+                parsedCommand.args,
+              );
+            },
+          });
+        }
+      }
+    }
   }
 
   // Completer for CodeMirror
@@ -62,9 +83,12 @@ export class SlashCommandHook implements Hook<SlashCommandHookT> {
     const prefixText = prefix.text;
     const options: Completion[] = [];
 
-    // No slash commands in comment blocks (queries and such)
+    // No slash commands in comment blocks (queries and such) or links
     const currentNode = syntaxTree(ctx.state).resolveInner(ctx.pos);
-    if (currentNode.type.name === "CommentBlock") {
+    if (
+      currentNode.type.name === "CommentBlock" ||
+      currentNode.type.name === "Link"
+    ) {
       return null;
     }
 

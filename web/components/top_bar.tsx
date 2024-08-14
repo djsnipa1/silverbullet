@@ -1,11 +1,15 @@
-import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import type {
+  CompletionContext,
+  CompletionResult,
+} from "@codemirror/autocomplete";
 import type { ComponentChildren, FunctionalComponent } from "preact";
-import { Notification } from "$lib/web.ts";
-import { FeatherProps } from "preact-feather/types";
+import type { Notification } from "@silverbulletmd/silverbullet/type/client";
+import type { FeatherProps } from "preact-feather/types";
+import type { IconBaseProps } from "react-icons/types";
 import { MiniEditor } from "./mini_editor.tsx";
 
 export type ActionButton = {
-  icon: FunctionalComponent<FeatherProps>;
+  icon: FunctionalComponent<FeatherProps | IconBaseProps>;
   description: string;
   class?: string;
   callback: () => void;
@@ -18,7 +22,6 @@ export function TopBar({
   unsavedChanges,
   syncFailures,
   isLoading,
-  isMobile,
   notifications,
   onRename,
   actionButtons,
@@ -29,12 +32,13 @@ export function TopBar({
   lhs,
   onClick,
   rhs,
+  pageNamePrefix,
+  cssClass,
 }: {
   pageName?: string;
   unsavedChanges: boolean;
   syncFailures: number;
   isLoading: boolean;
-  isMobile: boolean;
   notifications: Notification[];
   darkMode: boolean;
   vimMode: boolean;
@@ -45,6 +49,8 @@ export function TopBar({
   actionButtons: ActionButton[];
   lhs?: ComponentChildren;
   rhs?: ComponentChildren;
+  pageNamePrefix?: string;
+  cssClass?: string;
 }) {
   return (
     <div
@@ -56,13 +62,15 @@ export function TopBar({
       <div className="main">
         <div className="inner">
           <div className="wrapper">
+            <div className="sb-page-prefix">{pageNamePrefix}</div>
             <span
               id="sb-current-page"
-              className={isLoading
+              className={(isLoading
                 ? "sb-loading"
                 : unsavedChanges
                 ? "sb-unsaved"
-                : "sb-saved"}
+                : "sb-saved") +
+                (cssClass ? " sb-decorated-object " + cssClass : "")}
             >
               <MiniEditor
                 text={pageName ?? ""}

@@ -1,4 +1,4 @@
-import { Client } from "../client.ts";
+import type { Client } from "../client.ts";
 import {
   foldAll,
   foldCode,
@@ -6,14 +6,14 @@ import {
   unfoldAll,
   unfoldCode,
 } from "@codemirror/language";
-import { redo, undo } from "@codemirror/commands";
-import { Transaction } from "@codemirror/state";
+import { deleteLine, redo, undo } from "@codemirror/commands";
+import type { Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { getCM as vimGetCm, Vim } from "@replit/codemirror-vim";
-import { SysCallMapping } from "$lib/plugos/system.ts";
-import type { FilterOption } from "$lib/web.ts";
-import { UploadFile } from "../../plug-api/types.ts";
-import { PageRef } from "$sb/lib/page_ref.ts";
+import type { SysCallMapping } from "$lib/plugos/system.ts";
+import type { FilterOption } from "@silverbulletmd/silverbullet/type/client";
+import type { UploadFile } from "../../plug-api/types.ts";
+import type { PageRef } from "@silverbulletmd/silverbullet/lib/page_ref";
 import { openSearchPanel } from "@codemirror/search";
 import { diffAndPrepareChanges } from "../cm_util.ts";
 
@@ -58,8 +58,9 @@ export function editorSyscalls(client: Client): SysCallMapping {
     "editor.reloadUI": () => {
       location.reload();
     },
-    "editor.reloadSettingsAndCommands": async () => {
-      await client.loadSettings();
+    "editor.reloadConfigAndCommands": async () => {
+      await client.loadConfig();
+
       await client.clientSystem.system.localSyscall(
         "system.loadSpaceScripts",
         [],
@@ -71,7 +72,7 @@ export function editorSyscalls(client: Client): SysCallMapping {
     },
     "editor.openUrl": (_ctx, url: string, existingWindow = false) => {
       if (!existingWindow) {
-        const win = window.open(url, "_blank");
+        const win = globalThis.open(url, "_blank");
         if (win) {
           win.focus();
         }
@@ -214,6 +215,19 @@ export function editorSyscalls(client: Client): SysCallMapping {
       }
       client.editorView.focus();
     },
+    "editor.moveCursorToLine": (
+      _ctx,
+      line: number,
+      column = 1,
+      center = false,
+    ) => {
+      // CodeMirror already keeps information about lines
+      const cmLine = client.editorView.state.doc.line(line);
+      // How much to move inside the line, column number starts from 1
+      const offset = Math.max(0, Math.min(cmLine.length, column - 1));
+      // Just reuse the implementation above
+      syscalls["editor.moveCursor"](_ctx, cmLine.from + offset, center);
+    },
     "editor.setSelection": (_ctx, from: number, to: number) => {
       client.editorView.dispatch({
         selection: {
@@ -263,7 +277,10 @@ export function editorSyscalls(client: Client): SysCallMapping {
       const cm = vimGetCm(client.editorView)!;
       return Vim.handleEx(cm, exCommand);
     },
-    "editor.openPageNavigator": (_ctx, mode: "page" | "template" = "page") => {
+    "editor.openPageNavigator": (
+      _ctx,
+      mode: "page" | "meta" | "all" = "page",
+    ) => {
       client.startPageNavigate(mode);
     },
     "editor.openCommandPalette": () => {
@@ -271,6 +288,9 @@ export function editorSyscalls(client: Client): SysCallMapping {
         type: "show-palette",
         context: client.getContext(),
       });
+    },
+    "editor.deleteLine": () => {
+      deleteLine(client.editorView);
     },
     // Folding
     "editor.fold": () => {
